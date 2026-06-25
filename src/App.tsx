@@ -62,6 +62,18 @@ const namesFor = (users: User[], ids: string[]) => ids.map((id) => nameFor(users
 
 const activityLocation = (store: Store, activity: Activity) => (store.rainPlanActive && activity.rainLocation ? activity.rainLocation : activity.location);
 
+const publicAnimator: User = {
+  id: "public",
+  name: "Ekipa animatorjev",
+  email: "",
+  phone: "",
+  role: "animator",
+  team: "Skupni pogled",
+  availability: "javni pogled",
+  photoUrl: "",
+  createdAt: "2026-06-25",
+};
+
 export function App() {
   const [store, setStore] = useState<Store>(() => createDemoStore());
   const [currentUserId, setCurrentUserId] = useState("");
@@ -78,15 +90,14 @@ export function App() {
   const [pendingChange, setPendingChange] = useState<{ before: Activity; after: Activity } | null>(null);
   const [dayPlanOpen, setDayPlanOpen] = useState(false);
   const [announcementOpen, setAnnouncementOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const currentUser = store.users.find((user) => user.id === currentUserId) ?? null;
+  const viewerUser = currentUser ?? publicAnimator;
+  const isLoggedIn = Boolean(currentUser);
   const selectedDay = store.days.find((day) => day.id === selectedDayId) ?? store.days[0];
   const dayActivities = useMemo(() => sortActivities(store.activities.filter((activity) => activity.dayId === selectedDay.id)), [store.activities, selectedDay.id]);
   const { current, next } = getCurrentAndNext(dayActivities);
-
-  if (!currentUser) {
-    return <LoginScreen users={store.users} onLogin={(user) => { setCurrentUserId(user.id); setRoleView(user.role === "admin" ? "admin" : "animator"); }} />;
-  }
 
   const updateActivity = (updated: Activity) => {
     const before = store.activities.find((activity) => activity.id === updated.id);
@@ -116,7 +127,7 @@ export function App() {
       messages: [
         {
           id: `m-${Date.now()}`,
-          senderId: currentUser.id,
+          senderId: viewerUser.id,
           channel: "announcements",
           title: "Sprememba urnika",
           text: `${change.after.title} je posodobljena: ${change.after.startTime}-${change.after.endTime}, ${change.after.location}.`,
@@ -137,6 +148,10 @@ export function App() {
   };
 
   const markSeen = (messageId: string) => {
+    if (!currentUser) {
+      setLoginOpen(true);
+      return;
+    }
     setStore((previous) => ({
       ...previous,
       messages: previous.messages.map((message) =>
@@ -152,7 +167,7 @@ export function App() {
       messages: [
         {
           id: `m-rain-${Date.now()}`,
-          senderId: currentUser.id,
+          senderId: viewerUser.id,
           channel: "urgent",
           title: "Aktiviran dežni plan",
           text: "Zaradi dežja je aktiviran dežni plan. Preveri nove lokacije pri svojih nalogah.",
@@ -167,7 +182,7 @@ export function App() {
   };
 
   const content =
-    roleView === "admin" ? (
+    roleView === "admin" && currentUser ? (
       <AdminShell
         tab={adminTab}
         setTab={setAdminTab}
@@ -188,7 +203,9 @@ export function App() {
       <AnimatorShell
         tab={animatorTab}
         setTab={setAnimatorTab}
-        user={currentUser}
+        user={viewerUser}
+        isLoggedIn={isLoggedIn}
+        onLogin={() => setLoginOpen(true)}
         store={store}
         selectedDay={selectedDay}
         setSelectedDayId={setSelectedDayId}
@@ -206,21 +223,24 @@ export function App() {
       <TopBar
         user={currentUser}
         roleView={roleView}
-        onRoleSwitch={currentUser.role === "admin" ? setRoleView : undefined}
-        onLogout={() => setCurrentUserId("")}
+        viewerName={viewerUser.name}
+        onRoleSwitch={currentUser?.role === "admin" ? setRoleView : undefined}
+        onLogin={() => setLoginOpen(true)}
+        onLogout={currentUser ? () => { setCurrentUserId(""); setRoleView("animator"); } : undefined}
       />
       {store.rainPlanActive && <div className="rain-banner"><CloudRain size={18} /> Aktiviran je dežni plan</div>}
       {content}
-      {focusOpen && current && <NowModal store={store} user={currentUser} activity={current} next={next} onClose={() => setFocusOpen(false)} />}
+      {focusOpen && current && <NowModal store={store} user={viewerUser} isLoggedIn={isLoggedIn} activity={current} next={next} onClose={() => setFocusOpen(false)} />}
       {editingActivity && <ActivityEditModal store={store} activity={editingActivity} onClose={() => setEditingActivity(null)} onSave={(activity) => { updateActivity(activity); setEditingActivity(null); }} />}
       {pendingChange && <ConfirmNotifyModal change={pendingChange} onClose={() => setPendingChange(null)} onNotify={() => sendChangeNotification(pendingChange)} />}
-      {dayPlanOpen && <DayPlanModal store={store} selectedDay={selectedDay} setStore={setStore} onClose={() => setDayPlanOpen(false)} senderId={currentUser.id} />}
-      {announcementOpen && <AnnouncementModal store={store} setStore={setStore} senderId={currentUser.id} onClose={() => setAnnouncementOpen(false)} />}
+      {dayPlanOpen && <DayPlanModal store={store} selectedDay={selectedDay} setStore={setStore} onClose={() => setDayPlanOpen(false)} senderId={viewerUser.id} />}
+      {announcementOpen && <AnnouncementModal store={store} setStore={setStore} senderId={viewerUser.id} onClose={() => setAnnouncementOpen(false)} />}
+      {loginOpen && <LoginModal users={store.users} onClose={() => setLoginOpen(false)} onLogin={(user) => { setCurrentUserId(user.id); setRoleView(user.role === "admin" ? "admin" : "animator"); setLoginOpen(false); }} />}
     </div>
   );
 }
 
-function LoginScreen({ users, onLogin }: { users: User[]; onLogin: (user: User) => void }) {
+function LoginModal({ users, onLogin, onClose }: { users: User[]; onLogin: (user: User) => void; onClose: () => void }) {
   const [email, setEmail] = useState("luka@oratorij.si");
   const selected = users.find((user) => user.email === email) ?? users[0];
   const submit = (event: FormEvent) => {
@@ -228,8 +248,9 @@ function LoginScreen({ users, onLogin }: { users: User[]; onLogin: (user: User) 
     onLogin(selected);
   };
   return (
-    <main className="login-page">
+    <div className="modal-backdrop" role="dialog" aria-modal="true">
       <section className="login-card">
+        <div className="modal-head"><h2>Prijava</h2><button className="icon-button" onClick={onClose}><X size={18} /></button></div>
         <div className="logo-mark"><Sparkles size={28} /></div>
         <p className="eyebrow">Oratorij za animatorje</p>
         <h1>Oratorij Hub</h1>
@@ -240,16 +261,16 @@ function LoginScreen({ users, onLogin }: { users: User[]; onLogin: (user: User) 
           <button className="primary-button" type="submit">Prijava</button>
         </form>
       </section>
-    </main>
+    </div>
   );
 }
 
-function TopBar({ user, roleView, onRoleSwitch, onLogout }: { user: User; roleView: "animator" | "admin"; onRoleSwitch?: (role: "animator" | "admin") => void; onLogout: () => void }) {
+function TopBar({ user, viewerName, roleView, onRoleSwitch, onLogin, onLogout }: { user: User | null; viewerName: string; roleView: "animator" | "admin"; onRoleSwitch?: (role: "animator" | "admin") => void; onLogin: () => void; onLogout?: () => void }) {
   return (
     <header className="top-bar">
       <div>
         <strong>Oratorij Hub</strong>
-        <span>{user.name}</span>
+        <span>{user ? viewerName : "Javni pogled za animatorje"}</span>
       </div>
       <div className="top-actions">
         {onRoleSwitch && (
@@ -257,7 +278,7 @@ function TopBar({ user, roleView, onRoleSwitch, onLogout }: { user: User; roleVi
             {roleView === "admin" ? "Animator pogled" : "Admin pogled"}
           </button>
         )}
-        <button className="icon-button" onClick={onLogout}><X size={18} /></button>
+        {user ? <button className="icon-button" onClick={onLogout}><X size={18} /></button> : <button className="pill-button" onClick={onLogin}>Prijava</button>}
       </div>
     </header>
   );
@@ -267,6 +288,8 @@ function AnimatorShell(props: {
   tab: AnimatorTab;
   setTab: (tab: AnimatorTab) => void;
   user: User;
+  isLoggedIn: boolean;
+  onLogin: () => void;
   store: Store;
   selectedDay: Day;
   setSelectedDayId: (id: string) => void;
@@ -303,22 +326,30 @@ function NavButton({ active, icon, label, onClick }: { active: boolean; icon: Re
   return <button className={active ? "nav-button active" : "nav-button"} onClick={onClick}>{icon}<span>{label}</span></button>;
 }
 
-function TodayScreen({ user, store, selectedDay, activities, current, next, onFocus, onTaskToggle }: Parameters<typeof AnimatorShell>[0]) {
-  const myTasks = store.tasks.filter((task) => task.assignedTo === user.id && activities.some((activity) => activity.id === task.activityId));
+function TodayScreen({ user, isLoggedIn, onLogin, store, selectedDay, activities, current, next, onFocus, onTaskToggle }: Parameters<typeof AnimatorShell>[0]) {
+  const myTasks = isLoggedIn ? store.tasks.filter((task) => task.assignedTo === user.id && activities.some((activity) => activity.id === task.activityId)) : [];
   const urgent = store.messages.filter((message) => message.channel === "urgent").slice(0, 2);
   return (
     <div className="stack">
       <section className="hero-card">
-        <p>Dobro jutro, {firstName(user.name)}</p>
+        <p>{isLoggedIn ? `Dobro jutro, ${firstName(user.name)}` : "Živjo, animatorji"}</p>
         <h1>{formatDate(selectedDay.date)}</h1>
         <span>{selectedDay.title} Oratorija</span>
       </section>
+      {!isLoggedIn && (
+        <section className="card friendly-card">
+          <p className="eyebrow">Odprto za ekipo</p>
+          <h2>Vse osnovne informacije vidiš brez prijave.</h2>
+          <p>Urnik, trenutna aktivnost, točka dneva in obvestila so takoj dostopni. Prijava odklene tvoje osebne naloge, potrditve nujnih sporočil in admin urejanje.</p>
+          <button className="ghost-button" onClick={onLogin}>Prijavi se za moj pogled</button>
+        </section>
+      )}
       <ActivitySpotlight title="Trenutno poteka" activity={current} store={store} users={store.users} user={user} highlighted />
       <ActivitySpotlight title="Sledi" activity={next} store={store} users={store.users} user={user} />
       <PointOfDayCard day={selectedDay} compact />
       <section className="card">
         <div className="section-title"><h2>Moje naloge danes</h2><span>{myTasks.length}</span></div>
-        {myTasks.length === 0 ? <EmptyState text="Danes nimaš posebnih nalog." /> : myTasks.slice(0, 5).map((task) => <TaskCard key={task.id} task={task} activity={store.activities.find((activity) => activity.id === task.activityId)} onToggle={onTaskToggle} />)}
+        {!isLoggedIn ? <LoginPrompt onLogin={onLogin} text="Prijavi se, da vidiš svoje osebne naloge za danes." /> : myTasks.length === 0 ? <EmptyState text="Danes nimaš posebnih nalog." /> : myTasks.slice(0, 5).map((task) => <TaskCard key={task.id} task={task} activity={store.activities.find((activity) => activity.id === task.activityId)} onToggle={onTaskToggle} />)}
       </section>
       {urgent.length > 0 && <section className="card urgent-soft"><h2>Nujna obvestila</h2>{urgent.map((message) => <MessageCard key={message.id} message={message} users={store.users} currentUser={user} compact />)}</section>}
       <button className="focus-button" onClick={onFocus}>Kaj moram narediti zdaj?</button>
@@ -356,7 +387,20 @@ function TimetableScreen({ store, selectedDay, setSelectedDayId, activities, cur
   );
 }
 
-function TasksScreen({ store, user, activities, onTaskToggle }: Parameters<typeof AnimatorShell>[0]) {
+function TasksScreen({ store, user, isLoggedIn, onLogin, activities, onTaskToggle }: Parameters<typeof AnimatorShell>[0]) {
+  if (!isLoggedIn) {
+    return (
+      <div className="stack">
+        <ScreenHeader title="Moje naloge" subtitle="Osebni pogled za animatorje." />
+        <section className="card friendly-card">
+          <p className="eyebrow">Prijava odklene osebni seznam</p>
+          <h2>Skupni urnik je odprt, tvoje naloge pa so vezane nate.</h2>
+          <p>Ko se prijaviš, boš videl/a svoje zadolžitve po sklopih Zdaj, Kasneje danes in Opravljeno.</p>
+          <button className="primary-button" onClick={onLogin}>Prijava</button>
+        </section>
+      </div>
+    );
+  }
   const myTasks = store.tasks.filter((task) => task.assignedTo === user.id && activities.some((activity) => activity.id === task.activityId));
   const groups = {
     Zdaj: myTasks.filter((task) => !task.done && activities.find((activity) => activity.id === task.activityId && nowMinutes() >= toMinutes(activity.startTime) && nowMinutes() < toMinutes(activity.endTime))),
@@ -802,13 +846,13 @@ function PointOfDayCard({ day, compact = false }: { day: Day; compact?: boolean 
   );
 }
 
-function NowModal({ store, user, activity, next, onClose }: { store: Store; user: User; activity: Activity; next: Activity | null; onClose: () => void }) {
-  const task = store.tasks.find((item) => item.activityId === activity.id && item.assignedTo === user.id);
+function NowModal({ store, user, isLoggedIn, activity, next, onClose }: { store: Store; user: User; isLoggedIn: boolean; activity: Activity; next: Activity | null; onClose: () => void }) {
+  const task = isLoggedIn ? store.tasks.find((item) => item.activityId === activity.id && item.assignedTo === user.id) : null;
   return (
     <Modal title="Kaj moraš narediti zdaj?" onClose={onClose}>
       <section className="now-detail">
         <p>Trenutno: <strong>{activity.title}</strong></p>
-        <p>Tvoja naloga: <strong>{task?.title ?? "pomagaj ekipi in preveri navodila odgovorne osebe"}</strong></p>
+        <p>{isLoggedIn ? "Tvoja naloga" : "Skupna naloga"}: <strong>{task?.title ?? "pojdi na lokacijo, preveri odgovorno osebo in bodi pripravljen/a pomagati"}</strong></p>
         <p>Lokacija: <strong>{activityLocation(store, activity)}</strong></p>
         <p>S tabo: {namesFor(store.users, activity.assignedUserIds.filter((id) => id !== user.id)) || "vodstvo"}</p>
         <p>Materiali: {activity.materials.join(", ")}</p>
@@ -841,6 +885,15 @@ function MetricCard({ label, value, detail, warning }: { label: string; value: s
 
 function EmptyState({ text }: { text: string }) {
   return <div className="empty-state">{text}</div>;
+}
+
+function LoginPrompt({ text, onLogin }: { text: string; onLogin: () => void }) {
+  return (
+    <div className="login-prompt">
+      <p>{text}</p>
+      <button className="ghost-button" onClick={onLogin}>Prijava</button>
+    </div>
+  );
 }
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
