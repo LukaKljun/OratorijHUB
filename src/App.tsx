@@ -1,21 +1,14 @@
 import {
   Bell,
   CalendarDays,
-  CheckCircle2,
   Clock3,
-  Home,
-  LogIn,
   MapPin,
   Mountain,
   NotebookTabs,
-  ShieldCheck,
-  UserRound,
-  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type Tab = "now" | "schedule" | "news" | "guide";
-type User = { id: string; name: string; role: "animator" | "admin"; tasks: string[] };
 type Activity = {
   id: string;
   time: string;
@@ -26,30 +19,23 @@ type Activity = {
   changed?: boolean;
 };
 
-const users: User[] = [
-  { id: "luka", name: "Luka", role: "admin", tasks: ["Vodi skupino 3", "Postaja pri veliki igri", "Refleksija"] },
-  { id: "maja", name: "Maja", role: "admin", tasks: ["Jutranji zbor", "Obvestila animatorjem"] },
-  { id: "ana", name: "Ana", role: "animator", tasks: ["Sprejem otrok", "Kateheza skupina 2"] },
-  { id: "jure", name: "Jure", role: "animator", tasks: ["Velika igra", "Čiščenje dvorišča"] },
-];
-
 const schedule: Activity[] = [
-  { id: "a1", time: "08:00", title: "Prihod animatorjev", place: "Župnišče", lead: "Maja" },
-  { id: "a2", time: "09:00", title: "Zbiranje otrok", place: "Dvorišče", lead: "Gašper" },
-  { id: "a3", time: "09:30", title: "Igrica", place: "Oder", lead: "Žiga" },
-  { id: "a4", time: "10:00", title: "Molitev", place: "Cerkev", lead: "Nika" },
-  { id: "a5", time: "10:20", title: "Kateheza", place: "Učilnice", lead: "Ana", note: "Animatorji v skupine." },
-  { id: "a6", time: "11:00", title: "Malica", place: "Dvorišče", lead: "Sara" },
-  { id: "a7", time: "11:15", title: "Delavnice", place: "Učilnice", lead: "Eva", changed: true },
-  { id: "a8", time: "12:30", title: "Kosilo", place: "Jedilnica", lead: "Luka" },
-  { id: "a9", time: "14:00", title: "Velika igra", place: "Igrišče", lead: "Jure", changed: true },
-  { id: "a10", time: "16:30", title: "Refleksija", place: "Župnišče", lead: "Luka" },
+  { id: "a1", time: "08:00", title: "Prihod animatorjev", place: "Župnišče", lead: "vodstvo" },
+  { id: "a2", time: "09:00", title: "Zbiranje otrok", place: "Dvorišče", lead: "vhod" },
+  { id: "a3", time: "09:30", title: "Igrica", place: "Oder", lead: "igralska ekipa" },
+  { id: "a4", time: "10:00", title: "Molitev", place: "Cerkev", lead: "glasba" },
+  { id: "a5", time: "10:20", title: "Kateheza", place: "Učilnice", lead: "voditelji skupin", note: "Otroci gredo po skupinah." },
+  { id: "a6", time: "11:00", title: "Malica", place: "Dvorišče", lead: "kuhinja" },
+  { id: "a7", time: "11:15", title: "Delavnice", place: "Učilnice", lead: "delavnice" },
+  { id: "a8", time: "12:30", title: "Kosilo", place: "Jedilnica", lead: "kuhinja" },
+  { id: "a9", time: "14:00", title: "Velika igra", place: "Igrišče", lead: "ekipa igre" },
+  { id: "a10", time: "16:30", title: "Refleksija", place: "Župnišče", lead: "animatorji" },
 ];
 
 const announcements = [
-  "Velika igra ima pripravljen dežni plan.",
+  "Animatorji pridemo 10 minut pred svojo zadolžitvijo.",
   "Pri malici naj najprej pridejo mlajše skupine.",
-  "Animatorji: refleksija je danes ob 16:30.",
+  "Refleksija animatorjev je ob 16:30 v župnišču.",
 ];
 
 const minuteNow = () => {
@@ -72,9 +58,13 @@ const getNow = () => {
 
 export function App() {
   const [tab, setTab] = useState<Tab>("now");
-  const [user, setUser] = useState<User | null>(null);
-  const [loginOpen, setLoginOpen] = useState(false);
   const { current, next } = useMemo(getNow, []);
+
+  /*
+   * Prijava je namenoma izklopljena.
+   * Ko bo aplikacija dobila backend, se lahko tukaj ponovno doda prijava,
+   * osebne naloge animatorjev in urejanje urnika.
+   */
 
   return (
     <div className="app">
@@ -83,21 +73,18 @@ export function App() {
           <div className="mountain-mark">
             <Mountain />
           </div>
-          <button className="login-chip" onClick={() => setLoginOpen(true)}>
-            {user ? <UserRound /> : <LogIn />}
-            {user ? user.name : "Prijava"}
-          </button>
+          <span className="status-chip">Informativni pregled</span>
         </div>
         <p>Oratorij Hub</p>
         <h1>Hajdi: Živeti je lepo!</h1>
-        <span>Animatorji · danes · hitro in jasno</span>
+        <span>Animatorji · urnik · obvestila · vodič</span>
       </header>
 
       <main className="content">
-        {tab === "now" && <NowScreen current={current} next={next} user={user} />}
+        {tab === "now" && <NowScreen current={current} next={next} />}
         {tab === "schedule" && <ScheduleScreen current={current} />}
-        {tab === "news" && <NewsScreen user={user} />}
-        {tab === "guide" && <GuideScreen user={user} />}
+        {tab === "news" && <NewsScreen />}
+        {tab === "guide" && <GuideScreen />}
       </main>
 
       <nav className="bottom-nav">
@@ -106,13 +93,11 @@ export function App() {
         <NavButton active={tab === "news"} icon={<Bell />} label="Obvestila" onClick={() => setTab("news")} />
         <NavButton active={tab === "guide"} icon={<NotebookTabs />} label="Vodič" onClick={() => setTab("guide")} />
       </nav>
-
-      {loginOpen && <LoginSheet onClose={() => setLoginOpen(false)} onLogin={(nextUser) => { setUser(nextUser); setLoginOpen(false); }} />}
     </div>
   );
 }
 
-function NowScreen({ current, next, user }: { current: Activity; next: Activity | null; user: User | null }) {
+function NowScreen({ current, next }: { current: Activity; next: Activity | null }) {
   return (
     <div className="stack">
       <section className="now-card">
@@ -122,7 +107,7 @@ function NowScreen({ current, next, user }: { current: Activity; next: Activity 
           <span><Clock3 /> {current.time}</span>
           <span><MapPin /> {current.place}</span>
         </div>
-        <p className="lead">Odgovorni: {current.lead}</p>
+        <p className="lead">Skrbi: {current.lead}</p>
         {current.note && <p className="small-note">{current.note}</p>}
       </section>
 
@@ -134,20 +119,10 @@ function NowScreen({ current, next, user }: { current: Activity; next: Activity 
         </section>
       )}
 
-      <section className="card">
-        <div className="section-title">
-          <h3>Moje</h3>
-          {!user && <span>po prijavi</span>}
-        </div>
-        {user ? (
-          <div className="task-list">
-            {user.tasks.map((task) => (
-              <div className="task" key={task}><CheckCircle2 /> {task}</div>
-            ))}
-          </div>
-        ) : (
-          <p className="quiet">Urnik vidiš takoj. Za osebne naloge se prijavi.</p>
-        )}
+      <section className="guide-card soft">
+        <p className="label">Točka dneva</p>
+        <h2>Pogum</h2>
+        <p>Naredi dobro stvar tudi takrat, ko ni najlažje.</p>
       </section>
     </div>
   );
@@ -171,7 +146,7 @@ function ScheduleScreen({ current }: { current: Activity }) {
   );
 }
 
-function NewsScreen({ user }: { user: User | null }) {
+function NewsScreen() {
   return (
     <div className="stack">
       <h2 className="page-title">Obvestila</h2>
@@ -181,34 +156,24 @@ function NewsScreen({ user }: { user: User | null }) {
           <p>{message}</p>
         </section>
       ))}
-      {user?.role === "admin" && (
-        <section className="admin-mini">
-          <ShieldCheck />
-          <div>
-            <strong>Admin pogled</strong>
-            <p>Dodajanje obvestil pride kasneje. Trenutno je to čist demo.</p>
-          </div>
-        </section>
-      )}
     </div>
   );
 }
 
-function GuideScreen({ user }: { user: User | null }) {
+function GuideScreen() {
   return (
     <div className="stack">
       <h2 className="page-title">Vodič</h2>
       <section className="guide-card">
-        <p className="label">Točka dneva</p>
-        <h2>Pogum</h2>
-        <p>Pogum je narediti dobro stvar tudi takrat, ko ni najlažje.</p>
+        <p className="label">Hajdi</p>
+        <h2>Živeti je lepo!</h2>
+        <p>Dan je lep, ko ga napolnimo z dobroto, pogumom in pozornostjo do drugega.</p>
       </section>
       <section className="card compact-list">
-        <div><strong>Animatorji</strong><span>opazi otroka, ki je sam</span></div>
+        <div><strong>Animatorji</strong><span>bodi blizu otrokom</span></div>
         <div><strong>Pesem</strong><span>Tukaj sem, Gospod</span></div>
-        <div><strong>Molitev</strong><span>izberi dobro</span></div>
+        <div><strong>Molitev</strong><span>pogum za dobro</span></div>
       </section>
-      {!user && <p className="quiet center">Brez prijave vidiš vse osnovne informacije.</p>}
     </div>
   );
 }
@@ -219,28 +184,5 @@ function NavButton({ active, icon, label, onClick }: { active: boolean; icon: Re
       {icon}
       <span>{label}</span>
     </button>
-  );
-}
-
-function LoginSheet({ onClose, onLogin }: { onClose: () => void; onLogin: (user: User) => void }) {
-  return (
-    <div className="sheet-backdrop">
-      <section className="sheet">
-        <div className="sheet-head">
-          <h2>Prijava</h2>
-          <button onClick={onClose}><X /></button>
-        </div>
-        <p>Izberi demo animatorja.</p>
-        <div className="user-list">
-          {users.map((person) => (
-            <button key={person.id} onClick={() => onLogin(person)}>
-              <UserRound />
-              <span>{person.name}</span>
-              <em>{person.role === "admin" ? "admin" : "animator"}</em>
-            </button>
-          ))}
-        </div>
-      </section>
-    </div>
   );
 }

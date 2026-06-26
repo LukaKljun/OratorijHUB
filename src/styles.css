@@ -9,7 +9,6 @@
   --brown: #7a6245;
   --cream: #faf7f0;
   --card: #ffffff;
-  --yellow: #f1c75b;
   --line: #eadfcd;
   --shadow: 0 16px 40px rgba(43, 90, 24, 0.12);
 }
@@ -25,12 +24,12 @@ svg { width: 20px; height: 20px; }
 }
 
 .hero {
-  min-height: 248px;
+  min-height: 238px;
   padding: 22px 20px 28px;
   color: white;
   background:
     linear-gradient(180deg, rgba(43, 90, 24, 0.9), rgba(43, 90, 24, 0.98)),
-    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.28), transparent 18rem);
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.26), transparent 18rem);
   border-radius: 0 0 34px 34px;
 }
 
@@ -50,14 +49,11 @@ svg { width: 20px; height: 20px; }
   background: rgba(255, 255, 255, 0.18);
 }
 
-.login-chip {
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
+.status-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: white;
+  border-radius: 999px;
+  padding: 10px 14px;
   background: rgba(255, 255, 255, 0.18);
   font-weight: 900;
 }
@@ -76,7 +72,7 @@ svg { width: 20px; height: 20px; }
   line-height: 0.96;
 }
 
-.hero span {
+.hero span:last-child {
   display: inline-flex;
   margin-top: 18px;
   padding: 9px 13px;
@@ -97,15 +93,15 @@ svg { width: 20px; height: 20px; }
 .card,
 .mini-card,
 .schedule-item,
-.guide-card,
-.admin-mini {
+.guide-card {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--card);
   box-shadow: var(--shadow);
 }
 
-.now-card {
+.now-card,
+.guide-card {
   padding: 20px;
 }
 
@@ -156,33 +152,22 @@ svg { width: 20px; height: 20px; }
   gap: 4px;
 }
 .mini-card span,
-.section-title span,
 .quiet {
   color: var(--brown);
 }
 .mini-card strong { color: var(--green); font-size: 1.1rem; }
 .mini-card p { margin: 0; color: var(--brown); }
 
-.card { padding: 16px; }
-.section-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+.guide-card {
+  background: linear-gradient(135deg, #ffffff, #fff6dc);
 }
-.section-title h3 { margin: 0; font-size: 1.25rem; }
+.guide-card.soft {
+  background: #fff;
+}
+.guide-card h2 { font-size: 2.1rem; }
+.guide-card p:last-child { margin-bottom: 0; font-weight: 800; }
 
-.task-list { display: grid; gap: 8px; }
-.task {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border-radius: 14px;
-  background: var(--green-soft);
-  color: var(--green);
-  font-weight: 900;
-}
+.card { padding: 16px; }
 
 .schedule-item {
   display: grid;
@@ -218,13 +203,6 @@ svg { width: 20px; height: 20px; }
 .notice svg { color: var(--green); flex: 0 0 auto; }
 .notice p { margin: 0; font-weight: 800; }
 
-.guide-card {
-  padding: 20px;
-  background: linear-gradient(135deg, #ffffff, #fff6dc);
-}
-.guide-card h2 { font-size: 2.1rem; }
-.guide-card p:last-child { margin-bottom: 0; font-weight: 800; }
-
 .compact-list {
   display: grid;
   gap: 1px;
@@ -239,16 +217,6 @@ svg { width: 20px; height: 20px; }
 }
 .compact-list div:nth-child(odd) { background: #fbf4e5; }
 .compact-list span { color: var(--brown); text-align: right; }
-.center { text-align: center; }
-
-.admin-mini {
-  padding: 14px;
-  display: flex;
-  gap: 10px;
-  color: var(--green);
-  background: var(--green-soft);
-}
-.admin-mini p { margin: 3px 0 0; color: var(--brown); }
 
 .bottom-nav {
   position: fixed;
@@ -279,54 +247,6 @@ svg { width: 20px; height: 20px; }
 .nav-button.active {
   color: var(--green);
   background: var(--green-soft);
-}
-
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: grid;
-  align-items: end;
-  background: rgba(37, 29, 15, 0.38);
-}
-.sheet {
-  width: min(520px, 100%);
-  margin: 0 auto;
-  padding: 18px;
-  border-radius: 26px 26px 0 0;
-  background: white;
-}
-.sheet-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.sheet-head h2 { margin: 0; font-family: "Playfair Display", serif; font-size: 2rem; }
-.sheet-head button {
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--green-soft);
-  color: var(--green);
-}
-.user-list { display: grid; gap: 8px; margin-top: 14px; }
-.user-list button {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 12px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  color: #251d0f;
-  font-weight: 900;
-}
-.user-list em {
-  color: var(--brown);
-  font-style: normal;
-  font-size: 0.78rem;
 }
 
 @media (min-width: 760px) {
