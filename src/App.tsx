@@ -43,15 +43,9 @@ type SiteContent = {
 };
 type SaveResult =
   | { ok: true; content: SiteContent }
-  | { ok: false; reason: "missing-token" | "github-error"; message: string };
+  | { ok: false; message: string };
 
-const repoOwner = import.meta.env.VITE_GITHUB_OWNER ?? "LukaKljun";
-const repoName = import.meta.env.VITE_GITHUB_REPO ?? "OratorijHUB";
-const repoBranch = import.meta.env.VITE_GITHUB_BRANCH ?? "master";
-const contentFilePath = "data/content.json";
-const rawContentUrl = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${repoBranch}/${contentFilePath}`;
-const githubContentsApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${contentFilePath}`;
-const githubTokenStorageKey = "oratorij-github-token";
+const adminPassword = "oratorij2008";
 
 const defaultContent: SiteContent = {
   status: "Informativni pregled",
@@ -120,11 +114,9 @@ const getInitialSubscription = () => {
   return localStorage.getItem("oratorij-notifications") === "true" && Notification.permission === "granted";
 };
 
-const getStoredGithubToken = () => localStorage.getItem(githubTokenStorageKey) ?? "";
-
 const fetchSharedContent = async () => {
   try {
-    const response = await fetch(`${rawContentUrl}?t=${Date.now()}`, { cache: "no-store" });
+    const response = await fetch(`/api/content?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) return null;
     return (await response.json()) as SiteContent;
   } catch {
@@ -132,75 +124,25 @@ const fetchSharedContent = async () => {
   }
 };
 
-const encodeBase64 = (value: string) => {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-};
-
-const postSharedContent = async (content: SiteContent, token: string): Promise<SaveResult> => {
-  const trimmedToken = token.trim();
-  if (!trimmedToken) {
-    return {
-      ok: false,
-      reason: "missing-token",
-      message: "Za shranjevanje na GitHub najprej vnesi admin token.",
-    };
-  }
-
+const postSharedContent = async (content: SiteContent): Promise<SaveResult> => {
   try {
-    const currentFileResponse = await fetch(`${githubContentsApiUrl}?ref=${repoBranch}`, {
+    const response = await fetch("/api/content", {
+      method: "POST",
       headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${trimmedToken}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
-
-    if (!currentFileResponse.ok) {
-      return {
-        ok: false,
-        reason: "github-error",
-        message: "GitHub datoteke ni bilo mogoče prebrati. Preveri token in dostop do repoja.",
-      };
-    }
-
-    const currentFile = (await currentFileResponse.json()) as { sha?: string };
-    const updateResponse = await fetch(githubContentsApiUrl, {
-      method: "PUT",
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${trimmedToken}`,
         "Content-Type": "application/json",
-        "X-GitHub-Api-Version": "2022-11-28",
+        "x-admin-password": adminPassword,
       },
-      body: JSON.stringify({
-        message: "Update Oratorij Hub content",
-        content: encodeBase64(`${JSON.stringify(content, null, 2)}\n`),
-        sha: currentFile.sha,
-        branch: repoBranch,
-      }),
+      body: JSON.stringify(content),
     });
 
-    if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      return {
-        ok: false,
-        reason: "github-error",
-        message: `GitHub shranjevanje ni uspelo. ${errorText.slice(0, 120)}`,
-      };
+    if (!response.ok) {
+      const error = await response.json().catch(() => null) as { message?: string } | null;
+      return { ok: false, message: error?.message ?? "Shranjevanje na Vercel ni uspelo." };
     }
 
-    return { ok: true, content };
+    return { ok: true, content: (await response.json()) as SiteContent };
   } catch {
-    return {
-      ok: false,
-      reason: "github-error",
-      message: "Povezava z GitHubom ni uspela.",
-    };
+    return { ok: false, message: "Povezava z Vercel shrambo ni uspela." };
   }
 };
 
@@ -306,9 +248,9 @@ export function App() {
     });
   };
 
-  const saveSharedContent = async (nextContent: SiteContent, githubToken: string) => {
-    setSaveStatus("Shranjujem na GitHub ...");
-    const saved = await postSharedContent(nextContent, githubToken);
+  const saveSharedContent = async (nextContent: SiteContent) => {
+    setSaveStatus("Shranjujem na Vercel ...");
+    const saved = await postSharedContent(nextContent);
     if (!saved.ok) {
       setSaveStatus(saved.message);
       return;
@@ -322,7 +264,7 @@ export function App() {
     contentRef.current = saved.content;
     setContent(saved.content);
     sendAnnouncementNotifications(newAnnouncements);
-    setSaveStatus("Shranjeno na GitHub. Vercel stran bo spremembe prebrala v nekaj sekundah.");
+    setSaveStatus("Shranjeno na Vercel. Spremembe bodo vidne vsem.");
 
     if (!saved.content.pointDays.some((point) => point.id === selectedPointId)) {
       setSelectedPointId(saved.content.pointDays[0]?.id ?? "day-1");
@@ -604,17 +546,10 @@ function AdminScreen({
 }: {
   content: SiteContent;
   onClose: () => void;
-  onSave: (content: SiteContent, githubToken: string) => Promise<void>;
+  onSave: (content: SiteContent) => Promise<void>;
   saveStatus: string;
 }) {
   const [draft, setDraft] = useState<SiteContent>(content);
-  const [githubToken, setGithubToken] = useState(getStoredGithubToken);
-  const [tokenStatus, setTokenStatus] = useState(githubToken ? "Token je shranjen v tem brskalniku." : "");
-
-  const saveToken = () => {
-    localStorage.setItem(githubTokenStorageKey, githubToken.trim());
-    setTokenStatus(githubToken.trim() ? "Token je shranjen v tem brskalniku." : "Token je odstranjen.");
-  };
 
   const setField = <K extends keyof SiteContent>(key: K, value: SiteContent[K]) => {
     setDraft((previous) => ({ ...previous, [key]: value }));
@@ -659,24 +594,6 @@ function AdminScreen({
       </header>
 
       <main className="admin-content">
-        <section className="admin-card">
-          <h2>GitHub shranjevanje</h2>
-          <p className="admin-help">
-            Vercel prikazuje stran, GitHub pa hrani vsebino. Token ostane samo v tem brskalniku.
-          </p>
-          <label>
-            GitHub token
-            <input
-              type="password"
-              value={githubToken}
-              onChange={(event) => setGithubToken(event.target.value)}
-              placeholder="github_pat_..."
-            />
-          </label>
-          <button className="ghost-admin-button" onClick={saveToken}>Shrani token</button>
-          {tokenStatus && <p className="admin-help">{tokenStatus}</p>}
-        </section>
-
         <section className="admin-card">
           <h2>Naslovnica</h2>
           <Field label="Čip" value={draft.status} onChange={(value) => setField("status", value)} />
@@ -737,7 +654,7 @@ function AdminScreen({
       <footer className="admin-actions">
         <button onClick={onClose}>Zapri</button>
         {saveStatus && <span>{saveStatus}</span>}
-        <button className="save-button" onClick={() => { void onSave(draft, githubToken); }}>
+        <button className="save-button" onClick={() => { void onSave(draft); }}>
           <Save /> Shrani
         </button>
       </footer>
