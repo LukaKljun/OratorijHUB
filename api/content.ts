@@ -1,4 +1,4 @@
-import { head, put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 
 const contentPath = "oratorij-hub/content.json";
 const adminPassword = process.env.ORATORIJ_ADMIN_PASSWORD ?? "oratorij2008";
@@ -53,14 +53,13 @@ const jsonResponse = (body: unknown, init?: ResponseInit) =>
 
 export async function GET() {
   try {
-    const blob = await head(contentPath);
-    const response = await fetch(`${blob.url}?t=${Date.now()}`, { cache: "no-store" });
+    const blob = await get(contentPath, { access: "private" });
 
-    if (!response.ok) {
+    if (!blob?.stream) {
       return jsonResponse(defaultContent);
     }
 
-    return jsonResponse(await response.json());
+    return jsonResponse(await new Response(blob.stream).json());
   } catch {
     return jsonResponse(defaultContent);
   }
@@ -74,7 +73,7 @@ export async function POST(request: Request) {
   try {
     const content = await request.json();
     await put(contentPath, `${JSON.stringify(content, null, 2)}\n`, {
-      access: "public",
+      access: "private",
       allowOverwrite: true,
       cacheControlMaxAge: 60,
       contentType: "application/json; charset=utf-8",
