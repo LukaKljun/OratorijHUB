@@ -85,8 +85,16 @@ svg { width: 20px; height: 20px; }
 
 .content {
   width: min(720px, 100%);
-  margin: -26px auto 0;
+  margin: 0 auto;
   padding: 0 16px;
+}
+
+.content-overlap {
+  margin-top: -26px;
+}
+
+.content-clear {
+  margin-top: 18px;
 }
 
 .stack { display: grid; gap: 12px; }
@@ -420,7 +428,8 @@ svg { width: 20px; height: 20px; }
 
 @media (min-width: 760px) {
   .hero { width: min(760px, calc(100% - 32px)); margin: 16px auto 0; border-radius: 34px; }
-  .content { margin-top: -28px; }
+  .content-overlap { margin-top: -28px; }
+  .content-clear { margin-top: 18px; }
   .bottom-nav { left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 24px)); border-radius: 24px 24px 0 0; }
   .admin-row { grid-template-columns: 92px 1fr 1fr; }
   .admin-row input:last-child { grid-column: auto; }

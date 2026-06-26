@@ -124,7 +124,7 @@ export function App() {
         <span>{content.heroSubtitle}</span>
       </header>
 
-      <main className="content">
+      <main className={tab === "now" ? "content content-overlap" : "content content-clear"}>
         {tab === "now" && <NowScreen content={content} current={current} next={next} />}
         {tab === "schedule" && <ScheduleScreen current={current} schedule={content.schedule} />}
         {tab === "news" && <NewsScreen announcements={content.announcements} />}
