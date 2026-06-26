@@ -8,7 +8,7 @@ import {
   Save,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Tab = "now" | "schedule" | "news" | "guide";
 type Activity = {
@@ -108,18 +108,90 @@ const getInitialSubscription = () => {
   return localStorage.getItem("oratorij-notifications") === "true" && Notification.permission === "granted";
 };
 
+const fetchSharedContent = async () => {
+  try {
+    const response = await fetch("/api/content", { cache: "no-store" });
+    if (!response.ok) return null;
+    return await response.json() as SiteContent;
+  } catch {
+    return null;
+  }
+};
+
+const postSharedContent = async (content: SiteContent) => {
+  try {
+    const response = await fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(content),
+    });
+    if (!response.ok) return null;
+    return await response.json() as SiteContent;
+  } catch {
+    return null;
+  }
+};
+
+const notifyForNewAnnouncements = (previous: string[], next: string[], enabled: boolean) => {
+  if (!enabled || !("Notification" in window) || Notification.permission !== "granted") return;
+
+  const previousSet = new Set(previous.map((message) => message.trim()));
+  next
+    .map((message) => message.trim())
+    .filter((message) => message && !previousSet.has(message))
+    .forEach((message, index) => {
+      new Notification("Novo obvestilo", {
+        body: message,
+        tag: `oratorij-shared-announcement-${Date.now()}-${index}`,
+      });
+    });
+};
+
 export function App() {
   const [tab, setTab] = useState<Tab>("now");
   const [content, setContent] = useState<SiteContent>(defaultContent);
+  const contentRef = useRef(defaultContent);
   const [selectedPointId, setSelectedPointId] = useState(defaultContent.pointDays[0].id);
   const [notificationStatus, setNotificationStatus] = useState(getInitialNotificationStatus);
   const [notificationsEnabled, setNotificationsEnabled] = useState(getInitialSubscription);
+  const notificationsEnabledRef = useRef(notificationsEnabled);
   const [secretClicks, setSecretClicks] = useState(0);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
   const { current, next } = useMemo(() => getNow(content.schedule), [content.schedule]);
   const selectedPoint =
     content.pointDays.find((point) => point.id === selectedPointId) ?? content.pointDays[0];
+
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
+
+  useEffect(() => {
+    notificationsEnabledRef.current = notificationsEnabled;
+  }, [notificationsEnabled]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSharedContent = async () => {
+      const nextContent = await fetchSharedContent();
+      if (!active || !nextContent) return;
+
+      setContent((previous) => {
+        notifyForNewAnnouncements(previous.announcements, nextContent.announcements, notificationsEnabledRef.current);
+        contentRef.current = nextContent;
+        return nextContent;
+      });
+    };
+
+    loadSharedContent();
+    const interval = window.setInterval(loadSharedContent, 10000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const handleSecretClick = () => {
     const nextCount = secretClicks + 1;
@@ -152,7 +224,7 @@ export function App() {
   };
 
   const sendAnnouncementNotifications = (messages: string[]) => {
-    if (!notificationsEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+    if (!notificationsEnabledRef.current || !("Notification" in window) || Notification.permission !== "granted") return;
 
     messages.forEach((message, index) => {
       new Notification("Novo obvestilo", {
@@ -160,6 +232,29 @@ export function App() {
         tag: `oratorij-announcement-${Date.now()}-${index}`,
       });
     });
+  };
+
+  const saveSharedContent = async (nextContent: SiteContent) => {
+    setSaveStatus("Shranjujem ...");
+    const saved = await postSharedContent(nextContent);
+    if (!saved) {
+      setSaveStatus("Ni uspelo shraniti na strežnik.");
+      return;
+    }
+
+    const newAnnouncements = saved.announcements
+      .slice(contentRef.current.announcements.length)
+      .map((message) => message.trim())
+      .filter(Boolean);
+
+    contentRef.current = saved;
+    setContent(saved);
+    sendAnnouncementNotifications(newAnnouncements);
+    setSaveStatus("Shranjeno za vse.");
+
+    if (!saved.pointDays.some((point) => point.id === selectedPointId)) {
+      setSelectedPointId(saved.pointDays[0]?.id ?? "day-1");
+    }
   };
 
   return (
@@ -228,17 +323,8 @@ export function App() {
         <AdminScreen
           content={content}
           onClose={() => setAdminOpen(false)}
-          onSave={(nextContent) => {
-            const newAnnouncements = nextContent.announcements
-              .slice(content.announcements.length)
-              .map((message) => message.trim())
-              .filter(Boolean);
-            setContent(nextContent);
-            sendAnnouncementNotifications(newAnnouncements);
-            if (!nextContent.pointDays.some((point) => point.id === selectedPointId)) {
-              setSelectedPointId(nextContent.pointDays[0]?.id ?? "day-1");
-            }
-          }}
+          onSave={saveSharedContent}
+          saveStatus={saveStatus}
         />
       )}
     </div>
@@ -438,7 +524,17 @@ function PasswordModal({ onClose, onUnlock }: { onClose: () => void; onUnlock: (
   );
 }
 
-function AdminScreen({ content, onClose, onSave }: { content: SiteContent; onClose: () => void; onSave: (content: SiteContent) => void }) {
+function AdminScreen({
+  content,
+  onClose,
+  onSave,
+  saveStatus,
+}: {
+  content: SiteContent;
+  onClose: () => void;
+  onSave: (content: SiteContent) => Promise<void>;
+  saveStatus: string;
+}) {
   const [draft, setDraft] = useState<SiteContent>(content);
 
   const setField = <K extends keyof SiteContent>(key: K, value: SiteContent[K]) => {
@@ -543,7 +639,8 @@ function AdminScreen({ content, onClose, onSave }: { content: SiteContent; onClo
 
       <footer className="admin-actions">
         <button onClick={onClose}>Zapri</button>
-        <button className="save-button" onClick={() => { onSave(draft); onClose(); }}>
+        {saveStatus && <span>{saveStatus}</span>}
+        <button className="save-button" onClick={() => { void onSave(draft); }}>
           <Save /> Shrani
         </button>
       </footer>
