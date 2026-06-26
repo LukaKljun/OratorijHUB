@@ -176,6 +176,41 @@ svg { width: 20px; height: 20px; }
 .guide-card h2 { font-size: 2.1rem; }
 .guide-card p:last-child { margin-bottom: 0; font-weight: 800; }
 
+.point-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.point-head span {
+  color: var(--brown);
+  font-weight: 900;
+}
+
+.day-selector {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 6px 0 12px;
+  scrollbar-width: none;
+}
+
+.day-selector button {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: var(--brown);
+  background: #fbf4e5;
+  font-weight: 900;
+}
+
+.day-selector button.active {
+  color: white;
+  background: var(--green);
+}
+
 .card { padding: 16px; }
 
 .schedule-item {
@@ -416,6 +451,19 @@ svg { width: 20px; height: 20px; }
   align-items: start;
 }
 
+.point-editor {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #fbf4e5;
+}
+
+.point-editor textarea {
+  grid-column: 1 / -1;
+}
+
 .admin-actions {
   position: fixed;
   left: 0;
@@ -433,5 +481,6 @@ svg { width: 20px; height: 20px; }
   .bottom-nav { left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 24px)); border-radius: 24px 24px 0 0; }
   .admin-row { grid-template-columns: 92px 1fr 1fr; }
   .admin-row input:last-child { grid-column: auto; }
+  .point-editor { grid-template-columns: 92px 1fr; }
   .admin-actions { left: 50%; transform: translateX(-50%); width: min(860px, 100%); }
 }

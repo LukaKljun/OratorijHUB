@@ -21,14 +21,18 @@ type GuideRow = {
   title: string;
   text: string;
 };
+type DayPoint = {
+  id: string;
+  day: string;
+  title: string;
+  text: string;
+};
 type SiteContent = {
   status: string;
   appName: string;
   heroTitle: string;
   heroSubtitle: string;
-  pointLabel: string;
-  pointTitle: string;
-  pointText: string;
+  pointDays: DayPoint[];
   guideLabel: string;
   guideTitle: string;
   guideText: string;
@@ -42,9 +46,13 @@ const defaultContent: SiteContent = {
   appName: "Oratorij Hub",
   heroTitle: "Hajdi: Živeti je lepo!",
   heroSubtitle: "Animatorji · urnik · obvestila · vodič",
-  pointLabel: "Točka dneva",
-  pointTitle: "Pogum",
-  pointText: "Naredi dobro stvar tudi takrat, ko ni najlažje.",
+  pointDays: [
+    { id: "day-1", day: "1. dan", title: "Veselje", text: "Veselje raste, ko ga delimo z drugimi." },
+    { id: "day-2", day: "2. dan", title: "Pogum", text: "Naredi dobro stvar tudi takrat, ko ni najlažje." },
+    { id: "day-3", day: "3. dan", title: "Sodelovanje", text: "Ko poslušamo drug drugega, postane skupina močnejša." },
+    { id: "day-4", day: "4. dan", title: "Odpuščanje", text: "Odpuščanje nam pomaga začeti znova." },
+    { id: "day-5", day: "5. dan", title: "Hvaležnost", text: "Kar smo prejeli, nesemo naprej." },
+  ],
   guideLabel: "Hajdi",
   guideTitle: "Živeti je lepo!",
   guideText: "Dan je lep, ko ga napolnimo z dobroto, pogumom in pozornostjo do drugega.",
@@ -93,10 +101,13 @@ const getNow = (schedule: Activity[]) => {
 export function App() {
   const [tab, setTab] = useState<Tab>("now");
   const [content, setContent] = useState<SiteContent>(defaultContent);
+  const [selectedPointId, setSelectedPointId] = useState(defaultContent.pointDays[0].id);
   const [secretClicks, setSecretClicks] = useState(0);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const { current, next } = useMemo(() => getNow(content.schedule), [content.schedule]);
+  const selectedPoint =
+    content.pointDays.find((point) => point.id === selectedPointId) ?? content.pointDays[0];
 
   const handleSecretClick = () => {
     const nextCount = secretClicks + 1;
@@ -125,10 +136,26 @@ export function App() {
       </header>
 
       <main className={tab === "now" ? "content content-overlap" : "content content-clear"}>
-        {tab === "now" && <NowScreen content={content} current={current} next={next} />}
+        {tab === "now" && (
+          <NowScreen
+            pointDays={content.pointDays}
+            selectedPoint={selectedPoint}
+            selectedPointId={selectedPointId}
+            onSelectPoint={setSelectedPointId}
+            current={current}
+            next={next}
+          />
+        )}
         {tab === "schedule" && <ScheduleScreen current={current} schedule={content.schedule} />}
         {tab === "news" && <NewsScreen announcements={content.announcements} />}
-        {tab === "guide" && <GuideScreen content={content} />}
+        {tab === "guide" && (
+          <GuideScreen
+            content={content}
+            selectedPoint={selectedPoint}
+            selectedPointId={selectedPointId}
+            onSelectPoint={setSelectedPointId}
+          />
+        )}
       </main>
 
       <nav className="bottom-nav">
@@ -151,14 +178,33 @@ export function App() {
         <AdminScreen
           content={content}
           onClose={() => setAdminOpen(false)}
-          onSave={setContent}
+          onSave={(nextContent) => {
+            setContent(nextContent);
+            if (!nextContent.pointDays.some((point) => point.id === selectedPointId)) {
+              setSelectedPointId(nextContent.pointDays[0]?.id ?? "day-1");
+            }
+          }}
         />
       )}
     </div>
   );
 }
 
-function NowScreen({ content, current, next }: { content: SiteContent; current: Activity; next: Activity | null }) {
+function NowScreen({
+  pointDays,
+  selectedPoint,
+  selectedPointId,
+  onSelectPoint,
+  current,
+  next,
+}: {
+  pointDays: DayPoint[];
+  selectedPoint: DayPoint;
+  selectedPointId: string;
+  onSelectPoint: (id: string) => void;
+  current: Activity;
+  next: Activity | null;
+}) {
   return (
     <div className="stack">
       <section className="now-card">
@@ -178,9 +224,13 @@ function NowScreen({ content, current, next }: { content: SiteContent; current: 
       )}
 
       <section className="guide-card soft">
-        <p className="label">{content.pointLabel}</p>
-        <h2>{content.pointTitle}</h2>
-        <p>{content.pointText}</p>
+        <div className="point-head">
+          <p className="label">Točka dneva</p>
+          <span>{selectedPoint.day}</span>
+        </div>
+        <DayPointSelector points={pointDays} selectedId={selectedPointId} onSelect={onSelectPoint} />
+        <h2>{selectedPoint.title}</h2>
+        <p>{selectedPoint.text}</p>
       </section>
     </div>
   );
@@ -216,7 +266,17 @@ function NewsScreen({ announcements }: { announcements: string[] }) {
   );
 }
 
-function GuideScreen({ content }: { content: SiteContent }) {
+function GuideScreen({
+  content,
+  selectedPoint,
+  selectedPointId,
+  onSelectPoint,
+}: {
+  content: SiteContent;
+  selectedPoint: DayPoint;
+  selectedPointId: string;
+  onSelectPoint: (id: string) => void;
+}) {
   return (
     <div className="stack">
       <h2 className="page-title">Vodič</h2>
@@ -230,6 +290,31 @@ function GuideScreen({ content }: { content: SiteContent }) {
           <div key={`${row.title}-${index}`}><strong>{row.title}</strong><span>{row.text}</span></div>
         ))}
       </section>
+      <section className="guide-card soft">
+        <div className="point-head">
+          <p className="label">Točke dneva</p>
+          <span>{selectedPoint.day}</span>
+        </div>
+        <DayPointSelector points={content.pointDays} selectedId={selectedPointId} onSelect={onSelectPoint} />
+        <h2>{selectedPoint.title}</h2>
+        <p>{selectedPoint.text}</p>
+      </section>
+    </div>
+  );
+}
+
+function DayPointSelector({ points, selectedId, onSelect }: { points: DayPoint[]; selectedId: string; onSelect: (id: string) => void }) {
+  return (
+    <div className="day-selector">
+      {points.map((point) => (
+        <button
+          className={point.id === selectedId ? "active" : ""}
+          key={point.id}
+          onClick={() => onSelect(point.id)}
+        >
+          {point.day}
+        </button>
+      ))}
     </div>
   );
 }
@@ -293,6 +378,13 @@ function AdminScreen({ content, onClose, onSave }: { content: SiteContent; onClo
     }));
   };
 
+  const updateDayPoint = (id: string, patch: Partial<DayPoint>) => {
+    setDraft((previous) => ({
+      ...previous,
+      pointDays: previous.pointDays.map((point) => point.id === id ? { ...point, ...patch } : point),
+    }));
+  };
+
   const updateGuideRow = (index: number, patch: Partial<GuideRow>) => {
     setDraft((previous) => ({
       ...previous,
@@ -320,10 +412,14 @@ function AdminScreen({ content, onClose, onSave }: { content: SiteContent; onClo
         </section>
 
         <section className="admin-card">
-          <h2>Točka dneva</h2>
-          <Field label="Oznaka" value={draft.pointLabel} onChange={(value) => setField("pointLabel", value)} />
-          <Field label="Naslov" value={draft.pointTitle} onChange={(value) => setField("pointTitle", value)} />
-          <Field label="Besedilo" value={draft.pointText} onChange={(value) => setField("pointText", value)} multiline />
+          <h2>Točke dneva</h2>
+          {draft.pointDays.map((point) => (
+            <div className="point-editor" key={point.id}>
+              <input value={point.day} onChange={(event) => updateDayPoint(point.id, { day: event.target.value })} />
+              <input value={point.title} onChange={(event) => updateDayPoint(point.id, { title: event.target.value })} />
+              <textarea value={point.text} onChange={(event) => updateDayPoint(point.id, { text: event.target.value })} />
+            </div>
+          ))}
         </section>
 
         <section className="admin-card">
