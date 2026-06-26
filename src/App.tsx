@@ -98,10 +98,22 @@ const getNow = (schedule: Activity[]) => {
   return { current, next };
 };
 
+const getInitialNotificationStatus = (): NotificationPermission | "unsupported" => {
+  if (!("Notification" in window)) return "unsupported";
+  return Notification.permission;
+};
+
+const getInitialSubscription = () => {
+  if (!("Notification" in window)) return false;
+  return localStorage.getItem("oratorij-notifications") === "true" && Notification.permission === "granted";
+};
+
 export function App() {
   const [tab, setTab] = useState<Tab>("now");
   const [content, setContent] = useState<SiteContent>(defaultContent);
   const [selectedPointId, setSelectedPointId] = useState(defaultContent.pointDays[0].id);
+  const [notificationStatus, setNotificationStatus] = useState(getInitialNotificationStatus);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(getInitialSubscription);
   const [secretClicks, setSecretClicks] = useState(0);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -117,6 +129,37 @@ export function App() {
       return;
     }
     setSecretClicks(nextCount);
+  };
+
+  const subscribeToNotifications = async () => {
+    if (!("Notification" in window)) {
+      setNotificationStatus("unsupported");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationStatus(permission);
+    const enabled = permission === "granted";
+    setNotificationsEnabled(enabled);
+    localStorage.setItem("oratorij-notifications", enabled ? "true" : "false");
+
+    if (enabled) {
+      new Notification("Oratorij Hub", {
+        body: "Naročen/a si na obvestila.",
+        tag: "oratorij-subscribe",
+      });
+    }
+  };
+
+  const sendAnnouncementNotifications = (messages: string[]) => {
+    if (!notificationsEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+
+    messages.forEach((message, index) => {
+      new Notification("Novo obvestilo", {
+        body: message,
+        tag: `oratorij-announcement-${Date.now()}-${index}`,
+      });
+    });
   };
 
   return (
@@ -147,7 +190,14 @@ export function App() {
           />
         )}
         {tab === "schedule" && <ScheduleScreen current={current} schedule={content.schedule} />}
-        {tab === "news" && <NewsScreen announcements={content.announcements} />}
+        {tab === "news" && (
+          <NewsScreen
+            announcements={content.announcements}
+            notificationsEnabled={notificationsEnabled}
+            notificationStatus={notificationStatus}
+            onSubscribe={subscribeToNotifications}
+          />
+        )}
         {tab === "guide" && (
           <GuideScreen
             content={content}
@@ -179,7 +229,12 @@ export function App() {
           content={content}
           onClose={() => setAdminOpen(false)}
           onSave={(nextContent) => {
+            const newAnnouncements = nextContent.announcements
+              .slice(content.announcements.length)
+              .map((message) => message.trim())
+              .filter(Boolean);
             setContent(nextContent);
+            sendAnnouncementNotifications(newAnnouncements);
             if (!nextContent.pointDays.some((point) => point.id === selectedPointId)) {
               setSelectedPointId(nextContent.pointDays[0]?.id ?? "day-1");
             }
@@ -252,10 +307,29 @@ function ScheduleScreen({ current, schedule }: { current: Activity; schedule: Ac
   );
 }
 
-function NewsScreen({ announcements }: { announcements: string[] }) {
+function NewsScreen({
+  announcements,
+  notificationsEnabled,
+  notificationStatus,
+  onSubscribe,
+}: {
+  announcements: string[];
+  notificationsEnabled: boolean;
+  notificationStatus: NotificationPermission | "unsupported";
+  onSubscribe: () => void;
+}) {
   return (
     <div className="stack">
       <h2 className="page-title">Obvestila</h2>
+      <section className="card subscribe-card">
+        <div>
+          <strong>Obvestila na napravi</strong>
+          <p>{getNotificationText(notificationsEnabled, notificationStatus)}</p>
+        </div>
+        <button disabled={notificationsEnabled || notificationStatus === "unsupported" || notificationStatus === "denied"} onClick={onSubscribe}>
+          {notificationsEnabled ? "Naročeno" : "Naroči se"}
+        </button>
+      </section>
       {announcements.map((message, index) => (
         <section className="card notice" key={`${message}-${index}`}>
           <Bell />
@@ -264,6 +338,13 @@ function NewsScreen({ announcements }: { announcements: string[] }) {
       ))}
     </div>
   );
+}
+
+function getNotificationText(enabled: boolean, status: NotificationPermission | "unsupported") {
+  if (enabled) return "Ko se doda novo obvestilo, ga ta naprava prejme enkrat.";
+  if (status === "unsupported") return "Ta brskalnik ne podpira obvestil.";
+  if (status === "denied") return "Obvestila so blokirana v nastavitvah brskalnika.";
+  return "Naroči se, da dobiš novo obvestilo takoj, ko je objavljeno.";
 }
 
 function GuideScreen({

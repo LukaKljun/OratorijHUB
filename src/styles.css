@@ -247,6 +247,41 @@ svg { width: 20px; height: 20px; }
 .notice svg { color: var(--green); flex: 0 0 auto; }
 .notice p { margin: 0; font-weight: 800; }
 
+.subscribe-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: linear-gradient(135deg, #ffffff, #f4faef);
+}
+
+.subscribe-card strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.subscribe-card p {
+  margin: 0;
+  color: var(--brown);
+  font-size: 0.92rem;
+}
+
+.subscribe-card button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 12px;
+  color: white;
+  background: var(--green);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.subscribe-card button:disabled {
+  color: var(--brown);
+  background: #fbf4e5;
+  cursor: default;
+}
+
 .compact-list {
   display: grid;
   gap: 1px;
