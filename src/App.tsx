@@ -2,7 +2,6 @@ import {
   Bell,
   CalendarDays,
   Clock3,
-  MapPin,
   Mountain,
   NotebookTabs,
 } from "lucide-react";
@@ -13,23 +12,21 @@ type Activity = {
   id: string;
   time: string;
   title: string;
-  place: string;
-  lead: string;
   note?: string;
   changed?: boolean;
 };
 
 const schedule: Activity[] = [
-  { id: "a1", time: "08:00", title: "Prihod animatorjev", place: "Župnišče", lead: "vodstvo" },
-  { id: "a2", time: "09:00", title: "Zbiranje otrok", place: "Dvorišče", lead: "vhod" },
-  { id: "a3", time: "09:30", title: "Igrica", place: "Oder", lead: "igralska ekipa" },
-  { id: "a4", time: "10:00", title: "Molitev", place: "Cerkev", lead: "glasba" },
-  { id: "a5", time: "10:20", title: "Kateheza", place: "Učilnice", lead: "voditelji skupin", note: "Otroci gredo po skupinah." },
-  { id: "a6", time: "11:00", title: "Malica", place: "Dvorišče", lead: "kuhinja" },
-  { id: "a7", time: "11:15", title: "Delavnice", place: "Učilnice", lead: "delavnice" },
-  { id: "a8", time: "12:30", title: "Kosilo", place: "Jedilnica", lead: "kuhinja" },
-  { id: "a9", time: "14:00", title: "Velika igra", place: "Igrišče", lead: "ekipa igre" },
-  { id: "a10", time: "16:30", title: "Refleksija", place: "Župnišče", lead: "animatorji" },
+  { id: "a1", time: "08:00", title: "Prihod animatorjev" },
+  { id: "a2", time: "09:00", title: "Zbiranje otrok" },
+  { id: "a3", time: "09:30", title: "Igrica" },
+  { id: "a4", time: "10:00", title: "Molitev" },
+  { id: "a5", time: "10:20", title: "Kateheza", note: "Otroci gredo po skupinah." },
+  { id: "a6", time: "11:00", title: "Malica" },
+  { id: "a7", time: "11:15", title: "Delavnice" },
+  { id: "a8", time: "12:30", title: "Kosilo" },
+  { id: "a9", time: "14:00", title: "Velika igra" },
+  { id: "a10", time: "16:30", title: "Refleksija" },
 ];
 
 const announcements = [
@@ -105,9 +102,7 @@ function NowScreen({ current, next }: { current: Activity; next: Activity | null
         <h2>{current.title}</h2>
         <div className="meta">
           <span><Clock3 /> {current.time}</span>
-          <span><MapPin /> {current.place}</span>
         </div>
-        <p className="lead">Skrbi: {current.lead}</p>
         {current.note && <p className="small-note">{current.note}</p>}
       </section>
 
@@ -115,7 +110,6 @@ function NowScreen({ current, next }: { current: Activity; next: Activity | null
         <section className="mini-card">
           <span>Sledi</span>
           <strong>{next.time} · {next.title}</strong>
-          <p>{next.place}</p>
         </section>
       )}
 
@@ -137,7 +131,6 @@ function ScheduleScreen({ current }: { current: Activity }) {
           <time>{item.time}</time>
           <div>
             <h3>{item.title}</h3>
-            <p>{item.place} · {item.lead}</p>
           </div>
           {item.changed && <span className="tag">novo</span>}
         </section>

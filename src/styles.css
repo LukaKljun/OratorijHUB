@@ -143,7 +143,6 @@ svg { width: 20px; height: 20px; }
   font-weight: 900;
 }
 
-.lead { margin: 0; font-weight: 900; }
 .small-note { margin: 10px 0 0; color: var(--brown); }
 
 .mini-card {
