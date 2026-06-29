@@ -79,7 +79,7 @@ const defaultContent = {
   tripTitle: "Izlet",
   tripSubtitle: "Busi in razpored po kmetiji",
   tripBuses: [
-    { id: "bus-1", name: "Bus 1", groups: "1., 2., 3. in 4. skupina", leader: "Ti", notes: "" },
+    { id: "bus-1", name: "Bus 1", groups: "1., 2., 3. in 4. skupina", leader: "Luka Kljun", notes: "" },
     { id: "bus-2", name: "Bus 2", groups: "5., 6. in 7. skupina", leader: "Iza Orazem", notes: "" },
     { id: "bus-3", name: "Bus 3", groups: "8., 9. in 10. skupina", leader: "Anamarija Duščak", notes: "" },
     { id: "bus-4", name: "Bus 4", groups: "11., 12. in 13. skupina", leader: "Tinkara Bartol", notes: "" },
