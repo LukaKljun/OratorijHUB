@@ -297,6 +297,74 @@ svg { width: 20px; height: 20px; }
 .compact-list div:nth-child(odd) { background: #fbf4e5; }
 .compact-list span { color: var(--brown); text-align: right; }
 
+.bus-grid,
+.farm-list {
+  display: grid;
+  gap: 10px;
+}
+
+.bus-card,
+.farm-slot {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fbf4e5;
+}
+
+.bus-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+}
+
+.bus-card p,
+.bus-card span,
+.bus-card em {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.bus-card p {
+  color: #251d0f;
+  font-weight: 900;
+}
+
+.bus-card span,
+.bus-card em {
+  color: var(--brown);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.farm-slot {
+  grid-template-columns: 1fr;
+}
+
+.farm-slot time {
+  color: var(--green);
+  font-weight: 1000;
+}
+
+.farm-slot div {
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.farm-slot strong {
+  color: var(--green);
+}
+
+.farm-slot span {
+  color: #251d0f;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
 .duty-list {
   display: grid;
   gap: 10px;
@@ -338,7 +406,7 @@ svg { width: 20px; height: 20px; }
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
   padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   background: white;
@@ -355,7 +423,7 @@ svg { width: 20px; height: 20px; }
   gap: 2px;
   color: var(--brown);
   background: transparent;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 900;
 }
 .nav-button.active {
@@ -490,6 +558,34 @@ svg { width: 20px; height: 20px; }
   gap: 12px;
 }
 
+.admin-section-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  background: var(--cream);
+  scrollbar-width: none;
+}
+
+.admin-section-tabs button {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: var(--brown);
+  background: #fff;
+  font-weight: 900;
+}
+
+.admin-section-tabs button.active {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
+}
+
 .admin-card {
   display: grid;
   gap: 10px;
@@ -584,6 +680,22 @@ svg { width: 20px; height: 20px; }
   border: 1px solid var(--line);
 }
 
+.trip-admin-grid,
+.farm-admin-list {
+  display: grid;
+  gap: 10px;
+}
+
+.trip-editor,
+.farm-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #fbf4e5;
+  border: 1px solid var(--line);
+}
+
 .admin-actions {
   position: fixed;
   left: 0;
@@ -598,9 +710,14 @@ svg { width: 20px; height: 20px; }
   .hero { width: min(760px, calc(100% - 32px)); margin: 16px auto 0; border-radius: 34px; }
   .content-overlap { margin-top: -28px; }
   .content-clear { margin-top: 18px; }
-  .bottom-nav { left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 24px)); border-radius: 24px 24px 0 0; }
+  .bottom-nav { left: 50%; transform: translateX(-50%); width: min(640px, calc(100% - 24px)); border-radius: 24px 24px 0 0; }
+  .bus-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .farm-slot { grid-template-columns: 76px repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .farm-slot time { padding-top: 9px; }
   .admin-row { grid-template-columns: 92px 1fr 1fr; }
   .admin-row input:last-child { grid-column: auto; }
   .point-editor { grid-template-columns: 92px 1fr; }
+  .trip-admin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .farm-editor { grid-template-columns: 86px repeat(2, minmax(0, 1fr)); }
   .admin-actions { left: 50%; transform: translateX(-50%); width: min(860px, 100%); }
 }

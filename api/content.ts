@@ -76,6 +76,22 @@ const defaultContent = {
     { id: "day-5-d-4", dayId: "day-5", title: "Vhod", people: "", notes: "" },
     { id: "day-5-d-5", dayId: "day-5", title: "Velika igra", people: "", notes: "" },
   ],
+  tripTitle: "Izlet",
+  tripSubtitle: "Busi in razpored po kmetiji",
+  tripBuses: [
+    { id: "bus-1", name: "Bus 1", groups: "1., 2., 3. in 4. skupina", leader: "Ti", notes: "" },
+    { id: "bus-2", name: "Bus 2", groups: "5., 6. in 7. skupina", leader: "Iza Orazem", notes: "" },
+    { id: "bus-3", name: "Bus 3", groups: "8., 9. in 10. skupina", leader: "Anamarija Duščak", notes: "" },
+    { id: "bus-4", name: "Bus 4", groups: "11., 12. in 13. skupina", leader: "Tinkara Bartol", notes: "" },
+    { id: "bus-5", name: "Bus 5", groups: "14., 15. in 16. skupina + 2 animatorja in 7 otrok iz 17. skupine", leader: "Jerca Nelec", notes: "" },
+    { id: "bus-6", name: "Bus 6", groups: "Ostala 17. skupina (1 animator + 4 otroci) + 18., 19. in 20. skupina", leader: "Zala Lavrič", notes: "21. skupina bo ves čas stala poleg busov in se dala kamorkoli, kjer bo frej." },
+  ],
+  farmRotations: [
+    { id: "farm-1", time: "1. krog", cheese: "1. ekipa (1.-5. katehetska skupina)", catechesisGame: "2. ekipa (6.-10. katehetska skupina)", bigGameOne: "3. ekipa (11.-15. katehetska skupina)", bigGameTwo: "4. ekipa (16.-21. katehetska skupina)" },
+    { id: "farm-2", time: "2. krog", cheese: "4. ekipa (16.-21. katehetska skupina)", catechesisGame: "1. ekipa (1.-5. katehetska skupina)", bigGameOne: "2. ekipa (6.-10. katehetska skupina)", bigGameTwo: "3. ekipa (11.-15. katehetska skupina)" },
+    { id: "farm-3", time: "3. krog", cheese: "3. ekipa (11.-15. katehetska skupina)", catechesisGame: "4. ekipa (16.-21. katehetska skupina)", bigGameOne: "1. ekipa (1.-5. katehetska skupina)", bigGameTwo: "2. ekipa (6.-10. katehetska skupina)" },
+    { id: "farm-4", time: "4. krog", cheese: "2. ekipa (6.-10. katehetska skupina)", catechesisGame: "3. ekipa (11.-15. katehetska skupina)", bigGameOne: "1. ekipa (1.-5. katehetska skupina)", bigGameTwo: "4. ekipa (16.-21. katehetska skupina)" },
+  ],
 };
 
 const jsonResponse = (body: unknown, init?: ResponseInit) =>

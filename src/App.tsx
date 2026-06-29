@@ -1,5 +1,6 @@
 import {
   Bell,
+  Bus,
   CalendarDays,
   Clock3,
   ListChecks,
@@ -12,7 +13,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
-type Tab = "now" | "schedule" | "duties" | "news" | "guide";
+type Tab = "now" | "schedule" | "trip" | "duties" | "news" | "guide";
+type AdminSection = "home" | "points" | "schedule" | "trip" | "duties" | "news" | "guide";
 type Activity = {
   id: string;
   time: string;
@@ -36,6 +38,21 @@ type DailyDuty = {
   people: string;
   notes: string;
 };
+type TripBus = {
+  id: string;
+  name: string;
+  groups: string;
+  leader: string;
+  notes: string;
+};
+type FarmRotation = {
+  id: string;
+  time: string;
+  cheese: string;
+  catechesisGame: string;
+  bigGameOne: string;
+  bigGameTwo: string;
+};
 type SiteContent = {
   status: string;
   appName: string;
@@ -49,6 +66,10 @@ type SiteContent = {
   announcements: string[];
   schedule: Activity[];
   dailyDuties: DailyDuty[];
+  tripTitle: string;
+  tripSubtitle: string;
+  tripBuses: TripBus[];
+  farmRotations: FarmRotation[];
 };
 type SaveResult =
   | { ok: true; content: SiteContent }
@@ -129,6 +150,22 @@ const defaultContent: SiteContent = {
     { id: "day-5-d-4", dayId: "day-5", title: "Vhod", people: "", notes: "" },
     { id: "day-5-d-5", dayId: "day-5", title: "Velika igra", people: "", notes: "" },
   ],
+  tripTitle: "Izlet",
+  tripSubtitle: "Busi in razpored po kmetiji",
+  tripBuses: [
+    { id: "bus-1", name: "Bus 1", groups: "1., 2., 3. in 4. skupina", leader: "Ti", notes: "" },
+    { id: "bus-2", name: "Bus 2", groups: "5., 6. in 7. skupina", leader: "Iza Orazem", notes: "" },
+    { id: "bus-3", name: "Bus 3", groups: "8., 9. in 10. skupina", leader: "Anamarija Duščak", notes: "" },
+    { id: "bus-4", name: "Bus 4", groups: "11., 12. in 13. skupina", leader: "Tinkara Bartol", notes: "" },
+    { id: "bus-5", name: "Bus 5", groups: "14., 15. in 16. skupina + 2 animatorja in 7 otrok iz 17. skupine", leader: "Jerca Nelec", notes: "" },
+    { id: "bus-6", name: "Bus 6", groups: "Ostala 17. skupina (1 animator + 4 otroci) + 18., 19. in 20. skupina", leader: "Zala Lavrič", notes: "21. skupina bo ves čas stala poleg busov in se dala kamorkoli, kjer bo frej." },
+  ],
+  farmRotations: [
+    { id: "farm-1", time: "1. krog", cheese: "1. ekipa (1.-5. katehetska skupina)", catechesisGame: "2. ekipa (6.-10. katehetska skupina)", bigGameOne: "3. ekipa (11.-15. katehetska skupina)", bigGameTwo: "4. ekipa (16.-21. katehetska skupina)" },
+    { id: "farm-2", time: "2. krog", cheese: "4. ekipa (16.-21. katehetska skupina)", catechesisGame: "1. ekipa (1.-5. katehetska skupina)", bigGameOne: "2. ekipa (6.-10. katehetska skupina)", bigGameTwo: "3. ekipa (11.-15. katehetska skupina)" },
+    { id: "farm-3", time: "3. krog", cheese: "3. ekipa (11.-15. katehetska skupina)", catechesisGame: "4. ekipa (16.-21. katehetska skupina)", bigGameOne: "1. ekipa (1.-5. katehetska skupina)", bigGameTwo: "2. ekipa (6.-10. katehetska skupina)" },
+    { id: "farm-4", time: "4. krog", cheese: "2. ekipa (6.-10. katehetska skupina)", catechesisGame: "3. ekipa (11.-15. katehetska skupina)", bigGameOne: "1. ekipa (1.-5. katehetska skupina)", bigGameTwo: "4. ekipa (16.-21. katehetska skupina)" },
+  ],
 };
 
 const minuteNow = () => {
@@ -177,6 +214,10 @@ const normalizeContent = (content: Partial<SiteContent>): SiteContent => ({
   announcements: content.announcements ?? defaultContent.announcements,
   schedule: content.schedule?.length ? content.schedule : defaultContent.schedule,
   dailyDuties: content.dailyDuties?.length ? content.dailyDuties : defaultContent.dailyDuties,
+  tripTitle: content.tripTitle ?? defaultContent.tripTitle,
+  tripSubtitle: content.tripSubtitle ?? defaultContent.tripSubtitle,
+  tripBuses: content.tripBuses?.length ? content.tripBuses : defaultContent.tripBuses,
+  farmRotations: content.farmRotations?.length ? content.farmRotations : defaultContent.farmRotations,
 });
 
 const postSharedContent = async (content: SiteContent): Promise<SaveResult> => {
@@ -355,6 +396,7 @@ export function App() {
           />
         )}
         {tab === "schedule" && <ScheduleScreen current={current} schedule={content.schedule} />}
+        {tab === "trip" && <TripScreen content={content} />}
         {tab === "duties" && (
           <DutiesScreen
             pointDays={content.pointDays}
@@ -384,6 +426,7 @@ export function App() {
       <nav className="bottom-nav">
         <NavButton active={tab === "now"} icon={<Clock3 />} label="Zdaj" onClick={() => setTab("now")} />
         <NavButton active={tab === "schedule"} icon={<CalendarDays />} label="Urnik" onClick={() => setTab("schedule")} />
+        <NavButton active={tab === "trip"} icon={<Bus />} label="Izlet" onClick={() => setTab("trip")} />
         <NavButton active={tab === "duties"} icon={<ListChecks />} label="Naloge" onClick={() => setTab("duties")} />
         <NavButton active={tab === "news"} icon={<Bell />} label="Obvestila" onClick={() => setTab("news")} />
         <NavButton active={tab === "guide"} icon={<NotebookTabs />} label="Vodič" onClick={() => setTab("guide")} />
@@ -468,6 +511,48 @@ function ScheduleScreen({ current, schedule }: { current: Activity; schedule: Ac
           </div>
         </section>
       ))}
+    </div>
+  );
+}
+
+function TripScreen({ content }: { content: SiteContent }) {
+  return (
+    <div className="stack">
+      <h2 className="page-title">{content.tripTitle}</h2>
+      <section className="guide-card soft">
+        <div className="point-head">
+          <p className="label">Busi</p>
+          <span>{content.tripSubtitle}</span>
+        </div>
+        <div className="bus-grid">
+          {content.tripBuses.map((bus) => (
+            <article className="bus-card" key={bus.id}>
+              <div className="bus-title"><Bus /><strong>{bus.name}</strong></div>
+              <p>{bus.groups}</p>
+              <span>{bus.leader}</span>
+              {bus.notes && <em>{bus.notes}</em>}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="guide-card soft">
+        <div className="point-head">
+          <p className="label">Kmetija</p>
+          <span>4 skupine se menjavajo</span>
+        </div>
+        <div className="farm-list">
+          {content.farmRotations.map((rotation) => (
+            <article className="farm-slot" key={rotation.id}>
+              <time>{rotation.time}</time>
+              <div><strong>Sir</strong><span>{rotation.cheese}</span></div>
+              <div><strong>Igrica + kateheza</strong><span>{rotation.catechesisGame}</span></div>
+              <div><strong>Velika igra</strong><span>{rotation.bigGameOne}</span></div>
+              <div><strong>Velika igra</strong><span>{rotation.bigGameTwo}</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -654,6 +739,7 @@ function AdminScreen({
   saveStatus: string;
 }) {
   const [draft, setDraft] = useState<SiteContent>(content);
+  const [section, setSection] = useState<AdminSection>("home");
 
   const setField = <K extends keyof SiteContent>(key: K, value: SiteContent[K]) => {
     setDraft((previous) => ({ ...previous, [key]: value }));
@@ -717,6 +803,20 @@ function AdminScreen({
     }));
   };
 
+  const updateTripBus = (id: string, patch: Partial<TripBus>) => {
+    setDraft((previous) => ({
+      ...previous,
+      tripBuses: previous.tripBuses.map((bus) => bus.id === id ? { ...bus, ...patch } : bus),
+    }));
+  };
+
+  const updateFarmRotation = (id: string, patch: Partial<FarmRotation>) => {
+    setDraft((previous) => ({
+      ...previous,
+      farmRotations: previous.farmRotations.map((rotation) => rotation.id === id ? { ...rotation, ...patch } : rotation),
+    }));
+  };
+
   return (
     <div className="admin-screen">
       <header className="admin-top">
@@ -728,7 +828,17 @@ function AdminScreen({
       </header>
 
       <main className="admin-content">
-        <section className="admin-card">
+        <div className="admin-section-tabs">
+          <AdminSectionButton active={section === "home"} label="Naslovnica" onClick={() => { setSection("home"); document.getElementById("admin-home")?.scrollIntoView({ behavior: "smooth" }); }} />
+          <AdminSectionButton active={section === "points"} label="Točke" onClick={() => { setSection("points"); document.getElementById("admin-points")?.scrollIntoView({ behavior: "smooth" }); }} />
+          <AdminSectionButton active={section === "schedule"} label="Urnik" onClick={() => { setSection("schedule"); document.getElementById("admin-schedule")?.scrollIntoView({ behavior: "smooth" }); }} />
+          <AdminSectionButton active={section === "trip"} label="Izlet" onClick={() => { setSection("trip"); document.getElementById("admin-trip")?.scrollIntoView({ behavior: "smooth" }); }} />
+          <AdminSectionButton active={section === "duties"} label="Naloge" onClick={() => { setSection("duties"); document.getElementById("admin-duties")?.scrollIntoView({ behavior: "smooth" }); }} />
+          <AdminSectionButton active={section === "news"} label="Obvestila" onClick={() => { setSection("news"); document.getElementById("admin-news")?.scrollIntoView({ behavior: "smooth" }); }} />
+          <AdminSectionButton active={section === "guide"} label="Vodič" onClick={() => { setSection("guide"); document.getElementById("admin-guide")?.scrollIntoView({ behavior: "smooth" }); }} />
+        </div>
+
+        <section className="admin-card" id="admin-home">
           <h2>Naslovnica</h2>
           <Field label="Čip" value={draft.status} onChange={(value) => setField("status", value)} />
           <Field label="Ime" value={draft.appName} onChange={(value) => setField("appName", value)} />
@@ -736,7 +846,7 @@ function AdminScreen({
           <Field label="Podnaslov" value={draft.heroSubtitle} onChange={(value) => setField("heroSubtitle", value)} />
         </section>
 
-        <section className="admin-card">
+        <section className="admin-card" id="admin-points">
           <h2>Točke dneva</h2>
           {draft.pointDays.map((point) => (
             <div className="point-editor" key={point.id}>
@@ -747,7 +857,7 @@ function AdminScreen({
           ))}
         </section>
 
-        <section className="admin-card">
+        <section className="admin-card" id="admin-schedule">
           <h2>Urnik</h2>
           {draft.schedule.map((item) => (
             <div className="admin-row" key={item.id}>
@@ -758,7 +868,36 @@ function AdminScreen({
           ))}
         </section>
 
-        <section className="admin-card">
+        <section className="admin-card" id="admin-trip">
+          <h2>Izlet</h2>
+          <Field label="Naslov" value={draft.tripTitle} onChange={(value) => setField("tripTitle", value)} />
+          <Field label="Podnaslov" value={draft.tripSubtitle} onChange={(value) => setField("tripSubtitle", value)} />
+          <h3>Busi</h3>
+          <div className="trip-admin-grid">
+            {draft.tripBuses.map((bus) => (
+              <div className="trip-editor" key={bus.id}>
+                <input value={bus.name} onChange={(event) => updateTripBus(bus.id, { name: event.target.value })} />
+                <textarea value={bus.groups} placeholder="skupine" onChange={(event) => updateTripBus(bus.id, { groups: event.target.value })} />
+                <input value={bus.leader} placeholder="vodja" onChange={(event) => updateTripBus(bus.id, { leader: event.target.value })} />
+                <input value={bus.notes} placeholder="opombe" onChange={(event) => updateTripBus(bus.id, { notes: event.target.value })} />
+              </div>
+            ))}
+          </div>
+          <h3>Razpored po kmetiji</h3>
+          <div className="farm-admin-list">
+            {draft.farmRotations.map((rotation) => (
+              <div className="farm-editor" key={rotation.id}>
+                <input value={rotation.time} onChange={(event) => updateFarmRotation(rotation.id, { time: event.target.value })} />
+                <input value={rotation.cheese} placeholder="sir" onChange={(event) => updateFarmRotation(rotation.id, { cheese: event.target.value })} />
+                <input value={rotation.catechesisGame} placeholder="igrica + kateheza" onChange={(event) => updateFarmRotation(rotation.id, { catechesisGame: event.target.value })} />
+                <input value={rotation.bigGameOne} placeholder="velika igra 1" onChange={(event) => updateFarmRotation(rotation.id, { bigGameOne: event.target.value })} />
+                <input value={rotation.bigGameTwo} placeholder="velika igra 2" onChange={(event) => updateFarmRotation(rotation.id, { bigGameTwo: event.target.value })} />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="admin-card" id="admin-duties">
           <h2>Dnevne naloge</h2>
           <p className="admin-help">Za vsak dan vpisi, kdo ima igre skupine, kdo pelje na WC, kdo skrbi za vodo in ostale zadolzitve.</p>
           {draft.pointDays.map((day) => (
@@ -779,7 +918,7 @@ function AdminScreen({
           ))}
         </section>
 
-        <section className="admin-card">
+        <section className="admin-card" id="admin-news">
           <h2>Obvestila</h2>
           {draft.announcements.map((message, index) => (
             <div className="admin-line" key={index}>
@@ -792,7 +931,7 @@ function AdminScreen({
           </button>
         </section>
 
-        <section className="admin-card">
+        <section className="admin-card" id="admin-guide">
           <h2>Vodič</h2>
           <Field label="Oznaka" value={draft.guideLabel} onChange={(value) => setField("guideLabel", value)} />
           <Field label="Naslov" value={draft.guideTitle} onChange={(value) => setField("guideTitle", value)} />
@@ -828,6 +967,10 @@ function Field({ label, value, onChange, multiline = false }: { label: string; v
       )}
     </label>
   );
+}
+
+function AdminSectionButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return <button className={active ? "active" : ""} onClick={onClick}>{label}</button>;
 }
 
 function NavButton({ active, icon, label, onClick }: { active: boolean; icon: ReactElement; label: string; onClick: () => void }) {
