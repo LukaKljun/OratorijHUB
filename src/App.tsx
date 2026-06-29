@@ -2,6 +2,7 @@ import {
   Bell,
   CalendarDays,
   Clock3,
+  ListChecks,
   Mountain,
   NotebookTabs,
   Plus,
@@ -11,7 +12,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
-type Tab = "now" | "schedule" | "news" | "guide";
+type Tab = "now" | "schedule" | "duties" | "news" | "guide";
 type Activity = {
   id: string;
   time: string;
@@ -28,6 +29,13 @@ type DayPoint = {
   title: string;
   text: string;
 };
+type DailyDuty = {
+  id: string;
+  dayId: string;
+  title: string;
+  people: string;
+  notes: string;
+};
 type SiteContent = {
   status: string;
   appName: string;
@@ -40,6 +48,7 @@ type SiteContent = {
   guideRows: GuideRow[];
   announcements: string[];
   schedule: Activity[];
+  dailyDuties: DailyDuty[];
 };
 type SaveResult =
   | { ok: true; content: SiteContent }
@@ -84,6 +93,42 @@ const defaultContent: SiteContent = {
     { id: "a9", time: "14:00", title: "Velika igra" },
     { id: "a10", time: "16:30", title: "Refleksija" },
   ],
+  dailyDuties: [
+    { id: "day-1-d-1", dayId: "day-1", title: "Vhod", people: "Ana Kromar, Iza Andolsek", notes: "" },
+    { id: "day-1-d-2", dayId: "day-1", title: "Tri drevesa", people: "Lina Mise, Iza Merhar", notes: "" },
+    { id: "day-1-d-3", dayId: "day-1", title: "Soncne kreme", people: "Lora Arko, Iza Hribsek", notes: "" },
+    { id: "day-1-d-4", dayId: "day-1", title: "Most", people: "Aneja Knavs, Vita Vlajovic", notes: "" },
+    { id: "day-1-d-5", dayId: "day-1", title: "Sklece na travi", people: "Urh Zahar, Tine Mihelic", notes: "" },
+    { id: "day-1-d-6", dayId: "day-1", title: "Travnik", people: "Eva Stadler, Aiken", notes: "" },
+    { id: "day-1-d-7", dayId: "day-1", title: "Vici", people: "Klara Novak, Ana Mate", notes: "" },
+    { id: "day-1-d-8", dayId: "day-1", title: "Na travniku", people: "Sara Silc, Hana Ruparcic", notes: "" },
+    { id: "day-1-d-9", dayId: "day-1", title: "Zakljucek", people: "Laura Trpin, Nika Silc", notes: "" },
+    { id: "day-1-d-10", dayId: "day-1", title: "Animatorji za ruzake", people: "Patricija Pirc, Klara Franjga, Stela Pirc, Marija Arko, Iza Merhar, Masa Henigman", notes: "" },
+    { id: "day-1-d-11", dayId: "day-1", title: "Vecerji", people: "Eva Mihelic, Nika Mihelic, Vida Ruparcic, Klara Novak, Laura Trpin, Lucija Tekavec, Tjasa Tanko", notes: "" },
+    { id: "day-1-d-12", dayId: "day-1", title: "Velika igra skupine", people: "Samo Ema Ilc; Klara Franjga in Urh; Toni Ruparcic in Katarina Klun; Manca Kirin in Neza Gornik; Stela Pirc in Laura Trpin; Jana Obrstar in Jure Josipovic; Hana Benedik in Ela Ruparcic; Zoja, Amalija in Lina Adamic; Nik Rus in Vita Vlahovic; Iza Hribsek in Luka Gradisek; Laura Klun in Jost Lovsin; Jona Gruden in Luka Kljun; Masa Peterlin in Aljaz Zakrajsek; Julijana Jesensek in Matevz Savs; Anamarija Duscak in Ajda Andoljsek; Vanesa in Masa Henigman; Nadja in Eva Stadler; Jerca Nelec in Ana Kromar; Leja Bratovz in Hana Baloh; Aneja Knavs in Tinkara Bartol", notes: "" },
+    { id: "day-1-d-13", dayId: "day-1", title: "Geslo", people: "", notes: "Ce hoces druge vneti, moras sam goreti." },
+    { id: "day-1-d-14", dayId: "day-1", title: "Voda", people: "", notes: "Daj otrokom za pit vodo." },
+    { id: "day-2-d-1", dayId: "day-2", title: "Igre skupine", people: "", notes: "" },
+    { id: "day-2-d-2", dayId: "day-2", title: "Pelje na WC", people: "", notes: "" },
+    { id: "day-2-d-3", dayId: "day-2", title: "Voda", people: "", notes: "" },
+    { id: "day-2-d-4", dayId: "day-2", title: "Vhod", people: "", notes: "" },
+    { id: "day-2-d-5", dayId: "day-2", title: "Velika igra", people: "", notes: "" },
+    { id: "day-3-d-1", dayId: "day-3", title: "Igre skupine", people: "", notes: "" },
+    { id: "day-3-d-2", dayId: "day-3", title: "Pelje na WC", people: "", notes: "" },
+    { id: "day-3-d-3", dayId: "day-3", title: "Voda", people: "", notes: "" },
+    { id: "day-3-d-4", dayId: "day-3", title: "Vhod", people: "", notes: "" },
+    { id: "day-3-d-5", dayId: "day-3", title: "Velika igra", people: "", notes: "" },
+    { id: "day-4-d-1", dayId: "day-4", title: "Igre skupine", people: "", notes: "" },
+    { id: "day-4-d-2", dayId: "day-4", title: "Pelje na WC", people: "", notes: "" },
+    { id: "day-4-d-3", dayId: "day-4", title: "Voda", people: "", notes: "" },
+    { id: "day-4-d-4", dayId: "day-4", title: "Vhod", people: "", notes: "" },
+    { id: "day-4-d-5", dayId: "day-4", title: "Velika igra", people: "", notes: "" },
+    { id: "day-5-d-1", dayId: "day-5", title: "Igre skupine", people: "", notes: "" },
+    { id: "day-5-d-2", dayId: "day-5", title: "Pelje na WC", people: "", notes: "" },
+    { id: "day-5-d-3", dayId: "day-5", title: "Voda", people: "", notes: "" },
+    { id: "day-5-d-4", dayId: "day-5", title: "Vhod", people: "", notes: "" },
+    { id: "day-5-d-5", dayId: "day-5", title: "Velika igra", people: "", notes: "" },
+  ],
 };
 
 const minuteNow = () => {
@@ -118,11 +163,21 @@ const fetchSharedContent = async () => {
   try {
     const response = await fetch(`/api/content?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) return null;
-    return (await response.json()) as SiteContent;
+    return normalizeContent(await response.json());
   } catch {
     return null;
   }
 };
+
+const normalizeContent = (content: Partial<SiteContent>): SiteContent => ({
+  ...defaultContent,
+  ...content,
+  pointDays: content.pointDays?.length ? content.pointDays : defaultContent.pointDays,
+  guideRows: content.guideRows?.length ? content.guideRows : defaultContent.guideRows,
+  announcements: content.announcements ?? defaultContent.announcements,
+  schedule: content.schedule?.length ? content.schedule : defaultContent.schedule,
+  dailyDuties: content.dailyDuties?.length ? content.dailyDuties : defaultContent.dailyDuties,
+});
 
 const postSharedContent = async (content: SiteContent): Promise<SaveResult> => {
   try {
@@ -166,6 +221,7 @@ export function App() {
   const [content, setContent] = useState<SiteContent>(defaultContent);
   const contentRef = useRef(defaultContent);
   const [selectedPointId, setSelectedPointId] = useState(defaultContent.pointDays[0].id);
+  const [selectedDutyDayId, setSelectedDutyDayId] = useState(defaultContent.pointDays[0].id);
   const [notificationStatus, setNotificationStatus] = useState(getInitialNotificationStatus);
   const [notificationsEnabled, setNotificationsEnabled] = useState(getInitialSubscription);
   const notificationsEnabledRef = useRef(notificationsEnabled);
@@ -299,6 +355,14 @@ export function App() {
           />
         )}
         {tab === "schedule" && <ScheduleScreen current={current} schedule={content.schedule} />}
+        {tab === "duties" && (
+          <DutiesScreen
+            pointDays={content.pointDays}
+            dailyDuties={content.dailyDuties}
+            selectedDayId={selectedDutyDayId}
+            onSelectDay={setSelectedDutyDayId}
+          />
+        )}
         {tab === "news" && (
           <NewsScreen
             announcements={content.announcements}
@@ -320,6 +384,7 @@ export function App() {
       <nav className="bottom-nav">
         <NavButton active={tab === "now"} icon={<Clock3 />} label="Zdaj" onClick={() => setTab("now")} />
         <NavButton active={tab === "schedule"} icon={<CalendarDays />} label="Urnik" onClick={() => setTab("schedule")} />
+        <NavButton active={tab === "duties"} icon={<ListChecks />} label="Naloge" onClick={() => setTab("duties")} />
         <NavButton active={tab === "news"} icon={<Bell />} label="Obvestila" onClick={() => setTab("news")} />
         <NavButton active={tab === "guide"} icon={<NotebookTabs />} label="Vodič" onClick={() => setTab("guide")} />
       </nav>
@@ -403,6 +468,45 @@ function ScheduleScreen({ current, schedule }: { current: Activity; schedule: Ac
           </div>
         </section>
       ))}
+    </div>
+  );
+}
+
+function DutiesScreen({
+  pointDays,
+  dailyDuties,
+  selectedDayId,
+  onSelectDay,
+}: {
+  pointDays: DayPoint[];
+  dailyDuties: DailyDuty[];
+  selectedDayId: string;
+  onSelectDay: (id: string) => void;
+}) {
+  const selectedDay = pointDays.find((point) => point.id === selectedDayId) ?? pointDays[0];
+  const duties = dailyDuties.filter((duty) => duty.dayId === selectedDay.id);
+
+  return (
+    <div className="stack">
+      <h2 className="page-title">Dnevne naloge</h2>
+      <section className="guide-card soft">
+        <div className="point-head">
+          <p className="label">Kdo ima kaj</p>
+          <span>{selectedDay.day}</span>
+        </div>
+        <DayPointSelector points={pointDays} selectedId={selectedDay.id} onSelect={onSelectDay} />
+        <div className="duty-list">
+          {duties.length === 0 ? (
+            <p className="quiet">Za ta dan se ni vpisanih nalog.</p>
+          ) : duties.map((duty) => (
+            <article className="duty-item" key={duty.id}>
+              <strong>{duty.title}</strong>
+              {duty.people ? <p>{duty.people}</p> : <span>Se ni doloceno.</span>}
+              {duty.notes && <em>{duty.notes}</em>}
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -583,6 +687,36 @@ function AdminScreen({
     }));
   };
 
+  const updateDailyDuty = (id: string, patch: Partial<DailyDuty>) => {
+    setDraft((previous) => ({
+      ...previous,
+      dailyDuties: previous.dailyDuties.map((duty) => duty.id === id ? { ...duty, ...patch } : duty),
+    }));
+  };
+
+  const addDailyDuty = (dayId: string) => {
+    setDraft((previous) => ({
+      ...previous,
+      dailyDuties: [
+        ...previous.dailyDuties,
+        {
+          id: `${dayId}-d-${Date.now()}`,
+          dayId,
+          title: "Nova naloga",
+          people: "",
+          notes: "",
+        },
+      ],
+    }));
+  };
+
+  const removeDailyDuty = (id: string) => {
+    setDraft((previous) => ({
+      ...previous,
+      dailyDuties: previous.dailyDuties.filter((duty) => duty.id !== id),
+    }));
+  };
+
   return (
     <div className="admin-screen">
       <header className="admin-top">
@@ -620,6 +754,27 @@ function AdminScreen({
               <input value={item.time} onChange={(event) => updateSchedule(item.id, { time: event.target.value })} />
               <input value={item.title} onChange={(event) => updateSchedule(item.id, { title: event.target.value })} />
               <input value={item.note ?? ""} placeholder="opomba" onChange={(event) => updateSchedule(item.id, { note: event.target.value })} />
+            </div>
+          ))}
+        </section>
+
+        <section className="admin-card">
+          <h2>Dnevne naloge</h2>
+          <p className="admin-help">Za vsak dan vpisi, kdo ima igre skupine, kdo pelje na WC, kdo skrbi za vodo in ostale zadolzitve.</p>
+          {draft.pointDays.map((day) => (
+            <div className="duty-editor-day" key={day.id}>
+              <div className="duty-editor-head">
+                <strong>{day.day}</strong>
+                <button onClick={() => addDailyDuty(day.id)}><Plus /> Dodaj</button>
+              </div>
+              {draft.dailyDuties.filter((duty) => duty.dayId === day.id).map((duty) => (
+                <div className="duty-editor" key={duty.id}>
+                  <input value={duty.title} onChange={(event) => updateDailyDuty(duty.id, { title: event.target.value })} />
+                  <textarea value={duty.people} placeholder="kdo" onChange={(event) => updateDailyDuty(duty.id, { people: event.target.value })} />
+                  <textarea value={duty.notes} placeholder="opombe" onChange={(event) => updateDailyDuty(duty.id, { notes: event.target.value })} />
+                  <button onClick={() => removeDailyDuty(duty.id)}>Odstrani</button>
+                </div>
+              ))}
             </div>
           ))}
         </section>

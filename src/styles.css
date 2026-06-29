@@ -297,13 +297,48 @@ svg { width: 20px; height: 20px; }
 .compact-list div:nth-child(odd) { background: #fbf4e5; }
 .compact-list span { color: var(--brown); text-align: right; }
 
+.duty-list {
+  display: grid;
+  gap: 10px;
+}
+
+.duty-item {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fbf4e5;
+}
+
+.duty-item strong {
+  color: var(--green);
+}
+
+.duty-item p,
+.duty-item span,
+.duty-item em {
+  margin: 0;
+  color: var(--brown);
+  overflow-wrap: anywhere;
+}
+
+.duty-item p {
+  color: #251d0f;
+  font-weight: 900;
+}
+
+.duty-item em {
+  font-style: normal;
+  font-weight: 800;
+}
+
 .bottom-nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   background: white;
@@ -504,6 +539,49 @@ svg { width: 20px; height: 20px; }
 
 .point-editor textarea {
   grid-column: 1 / -1;
+}
+
+.duty-editor-day {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #fbf4e5;
+}
+
+.duty-editor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.duty-editor-head strong {
+  color: var(--green);
+  font-weight: 1000;
+}
+
+.duty-editor-head button,
+.duty-editor button {
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--green);
+  background: var(--green-soft);
+  font-weight: 900;
+}
+
+.duty-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--line);
 }
 
 .admin-actions {
