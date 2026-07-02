@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 type Tab = "now" | "schedule" | "trip" | "duties" | "news" | "guide";
 type AdminSection = "home" | "points" | "schedule" | "trip" | "duties" | "news" | "guide";
@@ -257,6 +257,65 @@ const notifyForNewAnnouncements = (previous: string[], next: string[], enabled: 
     });
 };
 
+const renderInlineMarkdown = (text: string) => {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).filter(Boolean);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) return <strong key={index}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("`") && part.endsWith("`")) return <code key={index}>{part.slice(1, -1)}</code>;
+    if (part.startsWith("*") && part.endsWith("*")) return <em key={index}>{part.slice(1, -1)}</em>;
+    return <span key={index}>{part}</span>;
+  });
+};
+
+function MarkdownText({ text, className = "" }: { text?: string; className?: string }) {
+  if (!text?.trim()) return null;
+
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const blocks: ReactNode[] = [];
+  let listItems: string[] = [];
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    const current = listItems;
+    listItems = [];
+    blocks.push(<ul key={`list-${blocks.length}`}>{current.map((item, index) => <li key={index}>{renderInlineMarkdown(item)}</li>)}</ul>);
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      return;
+    }
+
+    const listMatch = trimmed.match(/^[-*]\s+(.+)$/);
+    if (listMatch) {
+      listItems.push(listMatch[1]);
+      return;
+    }
+
+    flushList();
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const content = renderInlineMarkdown(headingMatch[2]);
+      blocks.push(level === 1 ? <h3 key={`h-${blocks.length}`}>{content}</h3> : <h4 key={`h-${blocks.length}`}>{content}</h4>);
+      return;
+    }
+
+    const quoteMatch = trimmed.match(/^>\s+(.+)$/);
+    if (quoteMatch) {
+      blocks.push(<blockquote key={`q-${blocks.length}`}>{renderInlineMarkdown(quoteMatch[1])}</blockquote>);
+      return;
+    }
+
+    blocks.push(<p key={`p-${blocks.length}`}>{renderInlineMarkdown(line)}</p>);
+  });
+  flushList();
+
+  return <div className={className ? `markdown-text ${className}` : "markdown-text"}>{blocks}</div>;
+}
+
 export function App() {
   const [tab, setTab] = useState<Tab>("now");
   const [content, setContent] = useState<SiteContent>(defaultContent);
@@ -476,7 +535,7 @@ function NowScreen({
         <div className="meta">
           <span><Clock3 /> {current.time}</span>
         </div>
-        {current.note && <p className="small-note">{current.note}</p>}
+        {current.note && <MarkdownText text={current.note} className="small-note" />}
       </section>
 
       {next && (
@@ -493,7 +552,7 @@ function NowScreen({
         </div>
         <DayPointSelector points={pointDays} selectedId={selectedPointId} onSelect={onSelectPoint} />
         <h2>{selectedPoint.title}</h2>
-        <p>{selectedPoint.text}</p>
+        <MarkdownText text={selectedPoint.text} />
       </section>
     </div>
   );
@@ -508,6 +567,7 @@ function ScheduleScreen({ current, schedule }: { current: Activity; schedule: Ac
           <time>{item.time}</time>
           <div>
             <h3>{item.title}</h3>
+            {item.note && <MarkdownText text={item.note} />}
           </div>
         </section>
       ))}
@@ -528,9 +588,9 @@ function TripScreen({ content }: { content: SiteContent }) {
           {content.tripBuses.map((bus) => (
             <article className="bus-card" key={bus.id}>
               <div className="bus-title"><Bus /><strong>{bus.name}</strong></div>
-              <p>{bus.groups}</p>
-              <span>{bus.leader}</span>
-              {bus.notes && <em>{bus.notes}</em>}
+              <MarkdownText text={bus.groups} className="bus-groups" />
+              <MarkdownText text={bus.leader} className="bus-leader" />
+              <MarkdownText text={bus.notes} className="bus-note" />
             </article>
           ))}
         </div>
@@ -545,10 +605,10 @@ function TripScreen({ content }: { content: SiteContent }) {
           {content.farmRotations.map((rotation) => (
             <article className="farm-slot" key={rotation.id}>
               <time>{rotation.time}</time>
-              <div><strong>Sir</strong><span>{rotation.cheese}</span></div>
-              <div><strong>Igrica + kateheza</strong><span>{rotation.catechesisGame}</span></div>
-              <div><strong>Velika igra</strong><span>{rotation.bigGameOne}</span></div>
-              <div><strong>Velika igra</strong><span>{rotation.bigGameTwo}</span></div>
+              <div><strong>Sir</strong><MarkdownText text={rotation.cheese} /></div>
+              <div><strong>Igrica + kateheza</strong><MarkdownText text={rotation.catechesisGame} /></div>
+              <div><strong>Velika igra</strong><MarkdownText text={rotation.bigGameOne} /></div>
+              <div><strong>Velika igra</strong><MarkdownText text={rotation.bigGameTwo} /></div>
             </article>
           ))}
         </div>
@@ -586,8 +646,8 @@ function DutiesScreen({
           ) : duties.map((duty) => (
             <article className="duty-item" key={duty.id}>
               <strong>{duty.title}</strong>
-              {duty.people ? <p>{duty.people}</p> : <span>Se ni doloceno.</span>}
-              {duty.notes && <em>{duty.notes}</em>}
+              {duty.people ? <MarkdownText text={duty.people} className="duty-people" /> : <span>Se ni doloceno.</span>}
+              <MarkdownText text={duty.notes} className="duty-note" />
             </article>
           ))}
         </div>
@@ -622,7 +682,7 @@ function NewsScreen({
       {announcements.map((message, index) => (
         <section className="card notice" key={`${message}-${index}`}>
           <Bell />
-          <p>{message}</p>
+          <MarkdownText text={message} />
         </section>
       ))}
     </div>
@@ -653,11 +713,11 @@ function GuideScreen({
       <section className="guide-card">
         <p className="label">{content.guideLabel}</p>
         <h2>{content.guideTitle}</h2>
-        <p>{content.guideText}</p>
+        <MarkdownText text={content.guideText} />
       </section>
       <section className="card compact-list">
         {content.guideRows.map((row, index) => (
-          <div key={`${row.title}-${index}`}><strong>{row.title}</strong><span>{row.text}</span></div>
+          <div key={`${row.title}-${index}`}><strong>{row.title}</strong><MarkdownText text={row.text} /></div>
         ))}
       </section>
       <section className="guide-card soft">
@@ -667,7 +727,7 @@ function GuideScreen({
         </div>
         <DayPointSelector points={content.pointDays} selectedId={selectedPointId} onSelect={onSelectPoint} />
         <h2>{selectedPoint.title}</h2>
-        <p>{selectedPoint.text}</p>
+        <MarkdownText text={selectedPoint.text} />
       </section>
     </div>
   );
@@ -861,9 +921,9 @@ function AdminScreen({
           <h2>Urnik</h2>
           {draft.schedule.map((item) => (
             <div className="admin-row" key={item.id}>
-              <input value={item.time} onChange={(event) => updateSchedule(item.id, { time: event.target.value })} />
-              <input value={item.title} onChange={(event) => updateSchedule(item.id, { title: event.target.value })} />
-              <input value={item.note ?? ""} placeholder="opomba" onChange={(event) => updateSchedule(item.id, { note: event.target.value })} />
+                <input value={item.time} onChange={(event) => updateSchedule(item.id, { time: event.target.value })} />
+                <input value={item.title} onChange={(event) => updateSchedule(item.id, { title: event.target.value })} />
+                <textarea value={item.note ?? ""} placeholder="opomba" onChange={(event) => updateSchedule(item.id, { note: event.target.value })} />
             </div>
           ))}
         </section>
@@ -879,7 +939,7 @@ function AdminScreen({
                 <input value={bus.name} onChange={(event) => updateTripBus(bus.id, { name: event.target.value })} />
                 <textarea value={bus.groups} placeholder="skupine" onChange={(event) => updateTripBus(bus.id, { groups: event.target.value })} />
                 <input value={bus.leader} placeholder="vodja" onChange={(event) => updateTripBus(bus.id, { leader: event.target.value })} />
-                <input value={bus.notes} placeholder="opombe" onChange={(event) => updateTripBus(bus.id, { notes: event.target.value })} />
+                <textarea value={bus.notes} placeholder="opombe" onChange={(event) => updateTripBus(bus.id, { notes: event.target.value })} />
               </div>
             ))}
           </div>
@@ -888,10 +948,10 @@ function AdminScreen({
             {draft.farmRotations.map((rotation) => (
               <div className="farm-editor" key={rotation.id}>
                 <input value={rotation.time} onChange={(event) => updateFarmRotation(rotation.id, { time: event.target.value })} />
-                <input value={rotation.cheese} placeholder="sir" onChange={(event) => updateFarmRotation(rotation.id, { cheese: event.target.value })} />
-                <input value={rotation.catechesisGame} placeholder="igrica + kateheza" onChange={(event) => updateFarmRotation(rotation.id, { catechesisGame: event.target.value })} />
-                <input value={rotation.bigGameOne} placeholder="velika igra 1" onChange={(event) => updateFarmRotation(rotation.id, { bigGameOne: event.target.value })} />
-                <input value={rotation.bigGameTwo} placeholder="velika igra 2" onChange={(event) => updateFarmRotation(rotation.id, { bigGameTwo: event.target.value })} />
+                <textarea value={rotation.cheese} placeholder="sir" onChange={(event) => updateFarmRotation(rotation.id, { cheese: event.target.value })} />
+                <textarea value={rotation.catechesisGame} placeholder="igrica + kateheza" onChange={(event) => updateFarmRotation(rotation.id, { catechesisGame: event.target.value })} />
+                <textarea value={rotation.bigGameOne} placeholder="velika igra 1" onChange={(event) => updateFarmRotation(rotation.id, { bigGameOne: event.target.value })} />
+                <textarea value={rotation.bigGameTwo} placeholder="velika igra 2" onChange={(event) => updateFarmRotation(rotation.id, { bigGameTwo: event.target.value })} />
               </div>
             ))}
           </div>
@@ -939,7 +999,7 @@ function AdminScreen({
           {draft.guideRows.map((row, index) => (
             <div className="admin-row two" key={index}>
               <input value={row.title} onChange={(event) => updateGuideRow(index, { title: event.target.value })} />
-              <input value={row.text} onChange={(event) => updateGuideRow(index, { text: event.target.value })} />
+              <textarea value={row.text} onChange={(event) => updateGuideRow(index, { text: event.target.value })} />
             </div>
           ))}
         </section>

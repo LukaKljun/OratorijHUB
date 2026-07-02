@@ -155,6 +155,50 @@ svg { width: 20px; height: 20px; }
 
 .small-note { margin: 10px 0 0; color: var(--brown); }
 
+.markdown-text {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.markdown-text p,
+.markdown-text ul,
+.markdown-text blockquote,
+.markdown-text h3,
+.markdown-text h4 {
+  margin: 0;
+}
+
+.markdown-text ul {
+  padding-left: 1.2rem;
+}
+
+.markdown-text li + li {
+  margin-top: 4px;
+}
+
+.markdown-text h3,
+.markdown-text h4 {
+  color: var(--green);
+  font-family: "Nunito", system-ui, sans-serif;
+  font-size: 1rem;
+}
+
+.markdown-text blockquote {
+  padding: 8px 10px;
+  border-left: 4px solid var(--green);
+  border-radius: 10px;
+  background: var(--green-soft);
+}
+
+.markdown-text code {
+  padding: 2px 5px;
+  border-radius: 6px;
+  color: var(--green);
+  background: var(--green-soft);
+}
+
 .mini-card {
   padding: 15px 16px;
   display: grid;
@@ -174,7 +218,7 @@ svg { width: 20px; height: 20px; }
   background: #fff;
 }
 .guide-card h2 { font-size: 2.1rem; }
-.guide-card p:last-child { margin-bottom: 0; font-weight: 800; }
+.guide-card .markdown-text { font-weight: 800; }
 
 .point-head {
   display: flex;
@@ -245,7 +289,7 @@ svg { width: 20px; height: 20px; }
   align-items: flex-start;
 }
 .notice svg { color: var(--green); flex: 0 0 auto; }
-.notice p { margin: 0; font-weight: 800; }
+.notice .markdown-text { font-weight: 800; }
 
 .subscribe-card {
   display: grid;
@@ -295,7 +339,7 @@ svg { width: 20px; height: 20px; }
   border-radius: 12px;
 }
 .compact-list div:nth-child(odd) { background: #fbf4e5; }
-.compact-list span { color: var(--brown); text-align: right; }
+.compact-list .markdown-text { color: var(--brown); text-align: right; }
 
 .bus-grid,
 .farm-list {
@@ -319,22 +363,14 @@ svg { width: 20px; height: 20px; }
   color: var(--green);
 }
 
-.bus-card p,
-.bus-card span,
-.bus-card em {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.bus-card p {
+.bus-groups {
   color: #251d0f;
   font-weight: 900;
 }
 
-.bus-card span,
-.bus-card em {
+.bus-leader,
+.bus-note {
   color: var(--brown);
-  font-style: normal;
   font-weight: 800;
 }
 
@@ -359,7 +395,7 @@ svg { width: 20px; height: 20px; }
   color: var(--green);
 }
 
-.farm-slot span {
+.farm-slot .markdown-text {
   color: #251d0f;
   font-weight: 900;
   overflow-wrap: anywhere;
@@ -382,21 +418,20 @@ svg { width: 20px; height: 20px; }
   color: var(--green);
 }
 
-.duty-item p,
 .duty-item span,
-.duty-item em {
+.duty-people,
+.duty-note {
   margin: 0;
   color: var(--brown);
   overflow-wrap: anywhere;
 }
 
-.duty-item p {
+.duty-people {
   color: #251d0f;
   font-weight: 900;
 }
 
-.duty-item em {
-  font-style: normal;
+.duty-note {
   font-weight: 800;
 }
 
@@ -613,7 +648,8 @@ svg { width: 20px; height: 20px; }
   grid-template-columns: 1fr 1fr;
 }
 
-.admin-row input:last-child {
+.admin-row input:last-child,
+.admin-row textarea:last-child {
   grid-column: 1 / -1;
 }
 
@@ -715,7 +751,8 @@ svg { width: 20px; height: 20px; }
   .farm-slot { grid-template-columns: 76px repeat(2, minmax(0, 1fr)); align-items: stretch; }
   .farm-slot time { padding-top: 9px; }
   .admin-row { grid-template-columns: 92px 1fr 1fr; }
-  .admin-row input:last-child { grid-column: auto; }
+  .admin-row input:last-child,
+  .admin-row textarea:last-child { grid-column: auto; }
   .point-editor { grid-template-columns: 92px 1fr; }
   .trip-admin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .farm-editor { grid-template-columns: 86px repeat(2, minmax(0, 1fr)); }
